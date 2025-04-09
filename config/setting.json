@@ -1,0 +1,12 @@
+{
+  "iou": 0.77,
+  "conf": 0.86,
+  "rate": 11,
+  "latency": 0,
+  "auto_save": 0,
+  "device": 0,
+  "port": 5,
+  "source": 0,
+  "model": 1,
+  "add_box": 0
+}

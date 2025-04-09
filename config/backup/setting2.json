@@ -1,0 +1,8 @@
+{
+  "sensor_switch": 0,
+  "SQL_switch": 0,
+  "server": "TRG-327-PC",
+  "database": "PE_DataBase",
+  "username": "TRG-PE",
+  "password": "705705"
+}

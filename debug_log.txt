@@ -1,0 +1,108 @@
+TIPS 搜索 bug-x 定位到指定位置   backupfile文件夹 存放有每次修改后的文件
+
+[bug List]
+bug-1  加入 停止线程会卡死  未解决     def stop(self):
+bug-2  加载多个摄像头 启动STOP停止时，再此启动 run 会出现 摄像头 no grap 警告
+        CvCapture_MSMF::grabFrame videoio(MSMF): can't grab frame
+        未解决  class DetThread(QThread): ###继承 QThread
+
+
+[Debug log]
+20230823 by Kwan： DetThread.run 程序  调用loadWebcam → 改为调用 loadStreams   实现多信号处理;  CAM信号输入 =  streams.txt
+20230824 by Kwan: 修改 class DetThread(QThread): →  启动  暂停  停止  按键功能控制  修改UI文件
+20230828 by kwan tabwidget 中 tap 内部控件无法 跟随窗口缩放大小 解决方法参考https://blog.csdn.net/sallyyellow/article/details/127498109
+
+
+
+[git command]
+如何查看diff本地分支和远程分支之间的？
+git diff master origin / master
+
+本地代码  同步到 远程仓库 master → origin master
+$ git add .
+$ git commit -m "add file"
+$ git push origin master
+更新本地某个文件  command ↓
+git checkout master -- debug_log.txt
+
+
+更新远程仓库代码  到 本地代码 origin master → master
+# 取回远程仓库的变化，并与本地分支合并
+git pull origin master:brantest
+将远程主机origin的master分支拉取过来，与本地的brantest分支合并。
+
+简化后  远程的 origin master分支 与 本地masterf分支合并
+$ git pull origin master
+
+
+# 提交时显示所有diff信息
+$ git commit -v
+
+# 列出所有本地分支和远程分支
+$ git branch -a
+
+# 显示有变更的文件
+$ git status
+
+# 显示暂存区和工作区的差异
+$ git diff
+# 显示本地代码 和 远程仓库 的差异
+git diff <local_branch> <remote_branch>
+
+
+一、设置ignore文件
+        有些时候我们创建了一个项目，但是项目中有些文件不想被Git跟踪、
+提交。例如maven项目中的target目录，日志目录，idea
+或者 eclipse 在加载项目后自动生成的一些本地化文件或者目录等。怎么办呢？这就需要我们为项目设置ignore文件。
+
+1. 在项目根目录下创建 .gitignore 文件，一定要是根目录下；
+
+2. 编辑 .gitignore 文件，按照如下规则过滤需要忽略的文件或者文件夹
+# 注释 - 以井号(#)开头的行为注释
+# 忽略单个文件
+filename.txt
+# 忽略文件类型（例如所有的txt文件）
+*.txt
+# 忽略目录（例如一个名为"logs"的目录）
+/logs/
+# 忽略特定目录下的所有文件和子目录（例如一个名为"temp"的目录）
+/temp/*
+# 忽略特定目录及其子目录中的特定文件（例如忽略"logs"目录下的所有.log文件）
+/logs/*.log
+
+
+3. 保存并关闭 .gitignore 文件；
+4. 将.gitignore文件添加到Git仓库中并提交更交
+git add .gitignore
+git commit -m "Add .gitignore file, XXXX"
+
+从此以后，Git将忽略.gitignore文件中指定的文件和目录，
+并且它们不会出现在git status、git add和git commit等命令的结果中。
+
+3.  文件已经被Git跟踪：如果你在设置.gitignore文件之前已经将文件添加到Git仓库并提交了更改，
+那么.gitignore文件对于已经被Git跟踪的文件是无效的。在这种情况下，你需要使用以下命令将这些文件从Git中删除：
+
+git rm --cached <filename>
+
+4. 缓存未清除：如果你之前已经将一些文件添加到Git仓库，
+并且在.gitignore文件中将它们列为忽略项，那么这些文件可能仍然存在于Git的缓存中。在这种情况下，
+.gitignore文件不会立即生效。你可以尝试使用以下命令清除Git缓存并更新忽略规则
+git rm -r --cached .
+git add .
+git commit -m "Update .gitignore, XXXX"
+
+240126
+
+0/1/4运行正常-可使用GPU至35%
+2/3/5运行正常-可使用GPU至35%
+
+2024/4/3  moldel=impress-0403  iou = 90  confidence = 60
+
+240509：闪退
+WARNING: Video stream unresponsive, please check your 5 camera connection.
+Traceback (most recent call last):
+  File "C:\ProgramData\anaconda3\envs\yolov5_pyqt5\lib\site-packages\torch\autograd\grad_mode.py", line 27, in decorate_context
+    return func(*args, **kwargs)
+  File "main.py", line 209, in run
+    percent = int(count/self.vid_cap.get(cv2.CAP_PROP_FRAME_COUNT)*self.percent_length)
+ZeroDivisionError: float division by zero

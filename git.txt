@@ -1,0 +1,125 @@
+一、基础操作
+初始化仓库
+
+bash
+复制
+git init                      # 初始化当前目录为Git仓库
+git clone <repo_url>          # 克隆远程仓库到本地
+配置信息
+
+bash
+复制
+git config --global user.name "Your Name"     # 设置全局用户名
+git config --global user.email "email@example.com"  # 设置全局邮箱
+git config --list              # 查看当前配置
+# user.name=host
+# user.email=bigcheng123@163.com
+
+二、文件操作
+提交工作流
+
+bash
+复制
+git status                    # 查看文件状态（未跟踪/已修改/已暂存）
+git add <file>                # 添加文件到暂存区
+git add .                     # 添加所有修改到暂存区
+git commit -m "message"       # 提交到本地仓库
+git commit -am "message"      # 跳过`git add`直接提交已跟踪文件
+撤销操作
+
+bash
+复制
+git restore <file>            # 丢弃工作区的修改（Git 2.23+）
+git restore --staged <file>   # 将文件从暂存区撤出（取消add）
+git checkout -- <file>        # 撤销工作区修改（旧版本命令）
+git reset HEAD <file>         # 取消暂存（旧版本命令）
+三、分支管理
+基础操作
+
+bash
+复制
+git branch                    # 查看本地分支
+git branch -a                 # 查看所有分支（含远程）
+git branch <branch_name>      # 创建新分支
+git checkout <branch_name>    # 切换分支
+git switch <branch_name>      # 切换分支（Git 2.23+）
+git merge <branch_name>       # 合并指定分支到当前分支
+git branch -d <branch_name>   # 删除分支（已合并）
+git branch -D <branch_name>   # 强制删除分支（未合并）
+远程分支
+
+bash
+复制
+git push origin <branch_name> # 推送本地分支到远程
+git push -u origin <branch_name> # 推送并关联远程分支
+git fetch origin              # 拉取远程分支信息（不自动合并）
+git pull origin <branch_name> # 拉取并合并远程分支（=fetch+merge）
+四、远程仓库
+bash
+复制
+git remote -v                   # 查看远程仓库地址
+git remote add origin <repo_url> # 添加远程仓库
+### git remote add origin https://gitee.com/trgtokai/scratch-detect.git
+
+git remote remove origin         # 移除远程仓库
+git push origin main            # 推送本地提交到远程（默认分支名可能是main/master）
+git push --force               # 强制推送（覆盖远程，谨慎使用）
+git fetch                      # 下载远程变更但不合并
+五、日志与历史
+bash
+复制
+git log                         # 查看提交历史
+git log --oneline               # 简洁版历史
+git log --graph                 # 图形化显示分支合并历史
+git show <commit_id>            # 查看某次提交的详情
+git diff                        # 查看工作区与暂存区的差异
+git diff --staged               # 查看暂存区与仓库的差异
+六、撤销与回退
+bash
+复制
+git reset --soft <commit_id>    # 回退到指定commit，保留工作区和暂存区
+git reset --mixed <commit_id>   # 默认选项，保留工作区，重置暂存区
+git reset --hard <commit_id>    # 彻底回退，慎用！
+git revert <commit_id>          # 生成一个新提交来撤销指定提交
+七、标签管理
+bash
+复制
+git tag                         # 查看所有标签
+git tag v1.0                    # 创建轻量标签
+git tag -a v1.0 -m "message"    # 创建含备注的标签
+git push origin v1.0            # 推送标签到远程
+八、实用技巧
+储藏更改
+
+bash
+复制
+git stash                     # 临时保存工作区修改
+git stash pop                 # 恢复最近一次储藏
+子模块
+
+bash
+复制
+git submodule add <repo_url>  # 添加子模块
+git submodule update --init   # 初始化子模块
+忽略文件
+编辑 .gitignore 文件，匹配规则示例：
+
+复制
+*.log
+/temp/
+九、常见场景示例
+代码冲突
+
+合并冲突后手动解决文件，然后：
+
+bash
+复制
+git add <file>
+git commit
+修改最后一次提交
+
+bash
+复制
+git commit --amend            # 修改提交信息或内容
+掌握这些命令足以应对日常开发需求。建议结合图形化工具（如 VS Code 的 Git 插件）提升效率。
+遇到复杂问题时，善用 git help <command> 查看官方文档
