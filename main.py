@@ -1,10 +1,5 @@
+# import python library ↓
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMenu, QAction
-
-from sql_folder import SQL_write
-from ui_files.main_win import Ui_mainWindow
-from ui_files.dialog.rtsp_win import Window
-from ui_files.setting_TRG import Ui_TRG
-
 from PyQt5.QtCore import Qt, QPoint, QTimer, QThread, pyqtSignal, QTime, QDateTime
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QIcon
 from pathlib import Path
@@ -20,9 +15,11 @@ import modbus_rtu
 import modbus_tcp
 import _thread
 import serial
-
-from shutil import copy
-
+# import private library ↓
+from sql_folder import SQL_write
+from ui_files.main_win import Ui_mainWindow
+from ui_files.dialog.rtsp_win import Window
+from ui_files.setting_TRG import Ui_TRG
 from models.experimental import attempt_load
 from utils.datasets import LoadImages, LoadWebcam, LoadStreams
 from utils.CustomMessageBox import MessageBox
@@ -36,7 +33,7 @@ from utils.capnums import Camera
 from sql_folder.SQL_write import writesql, closesql
 import logging
 
-# ↓ 【set global variable】 设置全局变量  ↓
+# ↓ set global variable 设置全局变量  ↓
 results = None
 modbus_flag = Falseresults = []
 okCounter = 0
@@ -55,12 +52,14 @@ feedback_data_D3 = None
 # Initialization function "SQL_is_open", SQL writing disabled by default //初始化函数：SQL_is_open，默认不开启SQL写入
 SQL_is_open = False
 sensor_is_open = False
-
 modbus_ip = "192.168.3.110"  # Modbus 服务器 IP
 modbus_port = 502  # 默认 Modbus TCP 端口
+sql_server_ip = '172.18.136.183'  # 不在一个域内的账户 只能使用IP 连接SQL服务器 , 不可使用计算机名称, SUMITOMORIKO/***
 
 
+# ↓ Class detector  检测类 created by yoloV5
 class DetThread(QThread):  # ## 检测功能主线程  继承 QThread
+    # 定义PYQT信号
     send_img_ch0 = pyqtSignal(np.ndarray)  # ## CH0 output image
     send_img_ch1 = pyqtSignal(np.ndarray)  # ## CH1 output image
     send_img_ch2 = pyqtSignal(np.ndarray)  # ## CH2 output image
@@ -676,7 +675,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                     self.det_thread.is_continue = True
                     if not self.det_thread.isRunning():
                         self.run_or_continue()
-
                 else:
                     print("sensor stop")
                     # reset output
@@ -702,7 +700,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                     # modbus_tcp.register_address(20, reset_register)
 
                 current_state = new_state
-
 
     def run_or_continue(self):  # runButton.clicked.connect
         # self.det_thread.source = 'streams.txt'
@@ -740,7 +737,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         try:
             hex_data[4]  # 确认是否有第五位→多寄存器读写
         except:
-            print("no hex 4")
+            print("calculate_crc: no hex 4")
         else:
             string = hex_data[4]
             hex_data[4] = string[-2:]  # 多寄存器位数信息
@@ -963,8 +960,11 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 # modbus_rtu.writedata(self.ser, write_m20_off)
                 # time.sleep(0.2)
                 # modbus_rtu.writedata(self.ser, write_m21_off)
-                self.ser.close()
-                self.client.close()
+                try:
+                    self.ser.close()
+                    self.client.close()
+                except Exception as e:
+                    print('ser.close error ', e)
 
     def modbus_on_off(self):  # modbus rtu 控制开关 open port ↓
         global modbus_flag
@@ -1008,14 +1008,14 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         # if not modbus_flag:
         if self.runButton_modbus.isChecked():
             modbus_flag = True
-            print('modbustcp is on, flag is true')
+            # print('modbustcp is on, flag is true')
             try:
                 self.client, self.ret, error = modbus_tcp.modbustcp_open_port(modbus_ip, modbus_port)  # 打开端口
             except Exception as e:
                 print('tcp openport erro -1', e)
                 self.statistic_msg(str(e))
 
-            if not self.ret:
+            if not self.ret: # show the info if modbus_tcp  connection failed
                 self.runButton_modbus.setChecked(False)
                 # self.runButton_modbus.setStyleSheet('background-color:rgb(220,0,0)') ### background = red
                 MessageBox(
@@ -1030,6 +1030,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                     print('openport erro-2', e)
                     self.statistic_msg(str(e))
             else:  # self.ret is  True
+                print('modbus_tcp connected successful')
                 self.runButton_modbus.setChecked(True)
                 _thread.start_new_thread(myWin.thread_mudbus_run, ())  # 启动检测 信号 循环
                 # self.runButton_modbus.setStyleSheet('background-color:rgb(0,0,0)')  ### background = red
@@ -1265,7 +1266,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
         except Exception as e:
             print(repr(e))
-
     def show_statistic(self, statistic_dic):  ### predicttion  output  resultWidget
         global results, okCounter, ngCounter, output_box_list
         try:
@@ -1337,7 +1337,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
         except Exception as e:
             print(repr(e))
-
     def load_setting(self):  ### laoding mainwindow object...'
         print(' loading mainwindows setting')
         config_file = 'config/setting.json'
@@ -1411,7 +1410,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.comboBox_source.setCurrentIndex(source)  # 设置当前索引号 "port": "COM0"
         self.comboBox_model.setCurrentIndex(model)  # 设置当前索引号 "port": "COM0"
         self.plot_box_CheckBox.setCheckState(add_box)
-
     def closeEvent(self, event):  ###点击关闭开关按钮执行 以下
         print('execute : closeEvent of main window')
         global modbus_flag, sensor_is_open, SQL_is_open, ser2
@@ -1461,36 +1459,13 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         MessageBox(
             self.closeButton, title='Tips', text='Terminate Program.', time=2000, auto=True).exec_()
         sys.exit(0)
-
-    # def load_config(self):   #### # ##提取备份数据 当出现断电关机数据丢失时， 将Cahce中 备份文件拷贝出来
-    #   try:
-    #
-    #       cache_path = os.path.dirname(os.path.realpath(__file__)) + r'\config'
-    #       to_path = os.path.dirname(os.path.realpath(__file__))  ### root path
-    #
-    #       for root, dirs, files in os.walk(
-    #               cache_path):  # root 表示当前正在访问的文件夹路径# dirs 表示该文件夹下的子目录名list # files 表示该文件夹下的文件list
-    #           # print('files',files) ####['edgevalue.db.bak', 'edgevalue.db.dat', 'edgevalue.db.dir']
-    #           for i in files:
-    #               from_path = os.path.join(root, i)  # 合并成一个完整路径
-    #               # copy(from_path, to_path)  ### 第一个参数 是复制对象， 第二个是 复制到文件夹
-    #               # print('from_path', from_path)
-    #               # print('to_path', to_path)
-    #           print('files in config has been coppied sucessfully')
-    #
-    #       # self.ser, self.ret , error = modbus_rtu.openport(self.port_type, 9600, 5)  # 打开端口
-    #
-    #   except Exception as e:
-    #       print('openport erro', e)
-    #       self.statistic_msg(str(e))
-
-    def setting_ui(self):  ### 菜单栏设定 genaral
+    def setting_ui(self):  # 菜单栏设定 genaral
         print("into setting")
         self.trg_setting_ui = setting_page()
         self.trg_setting_ui.show()
 
 
-#  Class child Window子窗口  参数设置页面 ↓
+# Class child Window子窗口  参数设置页面 created by PyQt
 class setting_page(QMainWindow, Ui_TRG):
     def __init__(self):
         super().__init__()
@@ -1503,13 +1478,13 @@ class setting_page(QMainWindow, Ui_TRG):
         self.load_setting()
 
     def load_setting(self):  #### sql config setting.json'
-        # print("into load setting")
+        global sql_server_ip
         config_file = 'config/setting2.json'
 
         if not os.path.exists(config_file):  #### 如果.json文件不存在则创建文件 ↓
             sensor_switch = 0
             SQL_switch = 2
-            server = 'DESKTOP-QGKNIRA'
+            server = sql_server_ip
             database = 'PE_DataBase'
             username = 'TRG-PE'
             password = '705705'
@@ -1530,7 +1505,7 @@ class setting_page(QMainWindow, Ui_TRG):
                 print("len", len(config))
                 sensor_switch = 0
                 SQL_switch = 2
-                self.server = 'DESKTOP-QGKNIRA'
+                self.server = sql_server_ip  # 不在一个域内的账户 只能使用IP 连接SQL服务器
                 self.database = 'PE_DataBase'
                 self.username = 'TRG-PE'
                 self.password = '705705'
@@ -1575,17 +1550,15 @@ class setting_page(QMainWindow, Ui_TRG):
         # print("checkbox2", self.checkBox_2.isChecked())
         if self.checkBox_2.isChecked():
             SQL_write.opensql(self.server, self.database, self.username, self.password)  # 打开SQL
-
             global SQL_is_open
             SQL_is_open = True
 
         if not self.checkBox_2.isChecked():
-
             try:
                 SQL_write.closesql()
                 SQL_is_open = False
             except:
-                print("no sql")
+                print("Do not use SQL server")
 
     def sensor_on_off(self):
         global ser2, ret2, sensor_is_open
@@ -1596,27 +1569,19 @@ class setting_page(QMainWindow, Ui_TRG):
                 print("sensor is open")
 
             except Exception as e:
-                print('openport erro-2', e)
+                print('openport error-2', e)
 
         if not self.checkBox_3.isChecked():
             # self.checkBox_2.setChecked(False)
             sensor_is_open = False
-            if not ser2 == None:
+            if not ser2 == None:  # sensor port has been open
                 try:
                     ser2.close()
                     print("sensor is close")
                     ser2 = None
                 except Exception as e:
-                    print('close port erro-2', e)
+                    print('close port error-2', e)
                     self.statistic_msg(str(e))
-
-
-####  for  testing  ↓ ##################################################
-def cvshow_image(img):  ### input img_src  output to pyqt label
-    try:
-        cv2.imshow('Image', img)
-    except Exception as e:
-        print(repr(e))
 
 
 if __name__ == "__main__":

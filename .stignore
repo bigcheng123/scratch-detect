@@ -1,0 +1,29 @@
+# 忽略整个目录 此文件用于 syncthing 同步文件时 排除个别目录 或 文件
+/目录名/
+
+/.gitee/
+/.ven/
+/__pycache__/
+/auto_save/
+/runs/
+
+.gitee/
+.ven/
+__pycache__/
+auto_save/
+runs/
+
+(?i).gitee
+(?i).ven
+(?i)__pycache__
+(?i)auto_save
+(?i)runs
+
+
+# 忽略特定文件类型
+*.tmp
+*.log
+# *.jpg
+
+# 忽略特定文件
+/path/to/file.txt
