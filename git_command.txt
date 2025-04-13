@@ -15,6 +15,27 @@ git config --list              # 查看当前配置
 # user.name=host
 # user.email=bigcheng123@163.com
 
+【重置本地仓库】
+要让本地仓库与远程仓库完全一致，舍弃所有本地变更并下载远程最新内容，
+可以按照以下步骤操作：
+git fetch --all #1. 首先获取远程最新变更
+git reset --hard origin/main #2. 重置本地分支到与远程分支完全一致
+git clean -fd #3. 清理未被追踪的文件和目录（可选）
+
+【重置远程仓库】⚠️
+你本地的 git reset --hard 回退了提交，现在要强制同步到远程。
+你想完全丢弃远程的更改，只保留本地的版本。
+你正在独自开发，且确定远程仓库可以安全覆盖
+
+git checkout main
+git push --force-with-lease origin main
+注意事项 ⚠️
+--force（或 -f）会覆盖远程仓库的所有内容，可能导致其他人的提交丢失。
+仅在你确定远程仓库可以被覆盖时使用（例如，你刚 git reset --hard 回退了提交）。
+如果远程仓库有保护分支（如 GitHub 的 main 分支默认受保护），可能需要先取消分支保护或使用 --force-with-lease（更安全的方式）：
+适用场景
+
+
 二、文件操作
 提交工作流
 

@@ -23,6 +23,7 @@ def opensql(server = 'TRG-327-PC', database = 'PE_DataBase', username = 'TRG-PE'
     except pyodbc.Error as e:
         print(f"Error connecting to database: {e}")
         sql_connection = False  # 输出SQL连接成功信号
+    return sql_connection
 
 def writesql(values1 = None, values2 = None, values3 = None,  values4 = None, values5 = None, values6 = None, values7 = None,):
 

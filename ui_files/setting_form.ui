@@ -28,7 +28,7 @@
     </property>
     <widget class="QWidget" name="tab">
      <attribute name="title">
-      <string>参数设置</string>
+      <string>SETTING PAGE</string>
      </attribute>
      <widget class="QGroupBox" name="groupBox">
       <property name="geometry">
@@ -40,160 +40,66 @@
        </rect>
       </property>
       <property name="title">
-       <string>PLC_COM设定</string>
+       <string>PLC_CONNECT</string>
       </property>
       <widget class="QLabel" name="label">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>30</y>
-         <width>71</width>
-         <height>16</height>
+         <x>10</x>
+         <y>26</y>
+         <width>81</width>
+         <height>20</height>
         </rect>
        </property>
        <property name="text">
-        <string>PLC连接开关</string>
+        <string>PLC LINK</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_2">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>70</y>
-         <width>54</width>
-         <height>12</height>
+         <x>13</x>
+         <y>61</y>
+         <width>61</width>
+         <height>21</height>
         </rect>
        </property>
        <property name="text">
-        <string>COM设定</string>
+        <string>RTU</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_3">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>110</y>
-         <width>54</width>
-         <height>12</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>COM设定</string>
-       </property>
-      </widget>
-      <widget class="QCheckBox" name="checkBox">
-       <property name="geometry">
-        <rect>
-         <x>130</x>
-         <y>30</y>
+         <x>10</x>
+         <y>100</y>
          <width>71</width>
-         <height>16</height>
+         <height>21</height>
         </rect>
        </property>
        <property name="text">
-        <string>启用</string>
+        <string>TCP SERVER</string>
        </property>
       </widget>
-      <widget class="QComboBox" name="comboBox">
+      <widget class="QCheckBox" name="checkBox_plc_enable">
        <property name="geometry">
         <rect>
-         <x>130</x>
-         <y>60</y>
-         <width>69</width>
-         <height>22</height>
-        </rect>
-       </property>
-       <item>
-        <property name="text">
-         <string>COM0</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM1</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM2</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM3</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM4</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM5</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM6</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM7</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>COM8</string>
-        </property>
-       </item>
-      </widget>
-     </widget>
-     <widget class="QGroupBox" name="groupBox_2">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>290</y>
-        <width>241</width>
-        <height>211</height>
-       </rect>
-      </property>
-      <property name="title">
-       <string>传感器_COM设定</string>
-      </property>
-      <widget class="QLabel" name="label_9">
-       <property name="geometry">
-        <rect>
-         <x>20</x>
+         <x>100</x>
          <y>30</y>
-         <width>91</width>
-         <height>16</height>
+         <width>81</width>
+         <height>20</height>
         </rect>
        </property>
        <property name="text">
-        <string>传感器连接开关</string>
+        <string>ENABLE</string>
        </property>
       </widget>
-      <widget class="QLabel" name="label_10">
+      <widget class="QComboBox" name="comboBox_rtu_port">
        <property name="geometry">
         <rect>
-         <x>20</x>
-         <y>70</y>
-         <width>54</width>
-         <height>12</height>
-        </rect>
-       </property>
-       <property name="text">
-        <string>COM设定</string>
-       </property>
-      </widget>
-      <widget class="QComboBox" name="comboBox_2">
-       <property name="geometry">
-        <rect>
-         <x>130</x>
+         <x>98</x>
          <y>60</y>
-         <width>69</width>
+         <width>81</width>
          <height>22</height>
         </rect>
        </property>
@@ -244,7 +150,7 @@
        </item>
        <item>
         <property name="text">
-         <string>C0M9</string>
+         <string>COM9</string>
         </property>
        </item>
        <item>
@@ -262,21 +168,254 @@
          <string>COM12</string>
         </property>
        </item>
+       <item>
+        <property name="text">
+         <string>COM13</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM14</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM15</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM50</string>
+        </property>
+       </item>
       </widget>
-      <widget class="QCheckBox" name="checkBox_3">
+      <widget class="QPushButton" name="Button_PlcPort_connect">
        <property name="geometry">
         <rect>
-         <x>130</x>
+         <x>170</x>
+         <y>10</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Connect</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEdit_tcp_server">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>100</y>
+         <width>133</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMask">
+        <string/>
+       </property>
+       <property name="text">
+        <string>192.168.0.150</string>
+       </property>
+       <property name="maxLength">
+        <number>32767</number>
+       </property>
+       <property name="cursorPosition">
+        <number>13</number>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_25">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>130</y>
+         <width>71</width>
+         <height>21</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>TCP PORT</string>
+       </property>
+      </widget>
+      <widget class="QLineEdit" name="lineEdit_tcp_port">
+       <property name="geometry">
+        <rect>
+         <x>100</x>
+         <y>130</y>
+         <width>133</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="inputMask">
+        <string/>
+       </property>
+       <property name="text">
+        <string>502</string>
+       </property>
+       <property name="maxLength">
+        <number>32767</number>
+       </property>
+       <property name="cursorPosition">
+        <number>3</number>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </widget>
+     <widget class="QGroupBox" name="groupBox_2">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>290</y>
+        <width>241</width>
+        <height>211</height>
+       </rect>
+      </property>
+      <property name="title">
+       <string>SENSOR_CONNECT</string>
+      </property>
+      <widget class="QLabel" name="label_9">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
          <y>30</y>
-         <width>47</width>
+         <width>91</width>
          <height>16</height>
         </rect>
        </property>
        <property name="text">
-        <string>启用</string>
+        <string>SENSOR USE</string>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_10">
+       <property name="geometry">
+        <rect>
+         <x>20</x>
+         <y>70</y>
+         <width>54</width>
+         <height>12</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>PORT</string>
+       </property>
+      </widget>
+      <widget class="QComboBox" name="comboBox_sensor_port">
+       <property name="geometry">
+        <rect>
+         <x>110</x>
+         <y>60</y>
+         <width>69</width>
+         <height>22</height>
+        </rect>
+       </property>
+       <item>
+        <property name="text">
+         <string>COM0</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM1</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM2</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM3</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM4</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM5</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM6</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM7</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM8</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM9</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM10</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM11</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM12</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM49</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>COM50</string>
+        </property>
+       </item>
+      </widget>
+      <widget class="QCheckBox" name="checkBox_sensor">
+       <property name="geometry">
+        <rect>
+         <x>106</x>
+         <y>30</y>
+         <width>61</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>ENABLE</string>
        </property>
        <property name="checked">
         <bool>false</bool>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="SensorPort_connect_Button">
+       <property name="geometry">
+        <rect>
+         <x>170</x>
+         <y>20</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Connect</string>
        </property>
       </widget>
      </widget>
@@ -290,7 +429,7 @@
        </rect>
       </property>
       <property name="title">
-       <string>SQL设定</string>
+       <string>SQL DB CONNECT</string>
       </property>
       <widget class="QLabel" name="label_4">
        <property name="geometry">
@@ -302,7 +441,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>SQL连接开关</string>
+        <string>SQL USE</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_5">
@@ -310,12 +449,12 @@
         <rect>
          <x>18</x>
          <y>68</y>
-         <width>41</width>
+         <width>71</width>
          <height>21</height>
         </rect>
        </property>
        <property name="text">
-        <string>主机名</string>
+        <string>HOST</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_6">
@@ -323,12 +462,12 @@
         <rect>
          <x>18</x>
          <y>115</y>
-         <width>41</width>
+         <width>71</width>
          <height>21</height>
         </rect>
        </property>
        <property name="text">
-        <string>数据库</string>
+        <string>DATABASE</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_7">
@@ -336,12 +475,12 @@
         <rect>
          <x>20</x>
          <y>170</y>
-         <width>41</width>
+         <width>71</width>
          <height>21</height>
         </rect>
        </property>
        <property name="text">
-        <string>用户名</string>
+        <string>USER</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_8">
@@ -349,31 +488,31 @@
         <rect>
          <x>20</x>
          <y>220</y>
-         <width>41</width>
+         <width>71</width>
          <height>21</height>
         </rect>
        </property>
        <property name="text">
-        <string>密码</string>
+        <string>PASSWORD</string>
        </property>
       </widget>
-      <widget class="QCheckBox" name="checkBox_2">
+      <widget class="QCheckBox" name="checkBox_sql">
        <property name="geometry">
         <rect>
          <x>100</x>
-         <y>30</y>
-         <width>47</width>
-         <height>16</height>
+         <y>25</y>
+         <width>61</width>
+         <height>21</height>
         </rect>
        </property>
        <property name="text">
-        <string>启用</string>
+        <string>ENABLE</string>
        </property>
        <property name="checked">
         <bool>false</bool>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEdit">
+      <widget class="QLineEdit" name="lineEdit_server">
        <property name="geometry">
         <rect>
          <x>100</x>
@@ -383,13 +522,22 @@
         </rect>
        </property>
        <property name="inputMask">
-        <string>TRG-327-PC</string>
+        <string/>
+       </property>
+       <property name="text">
+        <string>172.18.136.183</string>
+       </property>
+       <property name="maxLength">
+        <number>32767</number>
+       </property>
+       <property name="cursorPosition">
+        <number>14</number>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEdit_2">
+      <widget class="QLineEdit" name="lineEdit_db">
        <property name="geometry">
         <rect>
          <x>100</x>
@@ -408,7 +556,7 @@
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEdit_3">
+      <widget class="QLineEdit" name="lineEdit_user">
        <property name="geometry">
         <rect>
          <x>100</x>
@@ -418,13 +566,16 @@
         </rect>
        </property>
        <property name="inputMask">
+        <string/>
+       </property>
+       <property name="text">
         <string>TRG-PE</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
        </property>
       </widget>
-      <widget class="QLineEdit" name="lineEdit_4">
+      <widget class="QLineEdit" name="lineEdit_pw">
        <property name="geometry">
         <rect>
          <x>100</x>
@@ -434,13 +585,26 @@
         </rect>
        </property>
        <property name="inputMask">
-        <string>705705</string>
+        <string/>
        </property>
        <property name="text">
         <string>705705</string>
        </property>
        <property name="alignment">
         <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+      <widget class="QPushButton" name="sql_connect_Button">
+       <property name="geometry">
+        <rect>
+         <x>180</x>
+         <y>10</y>
+         <width>61</width>
+         <height>31</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Connect</string>
        </property>
       </widget>
      </widget>
@@ -454,9 +618,9 @@
        </rect>
       </property>
       <property name="title">
-       <string>图片保存设定</string>
+       <string>SAVE IMAGE</string>
       </property>
-      <widget class="QCheckBox" name="checkBox_4">
+      <widget class="QCheckBox" name="checkBox_savejpg">
        <property name="geometry">
         <rect>
          <x>130</x>
@@ -466,7 +630,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>启用</string>
+        <string>ENABLE</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_11">
@@ -479,7 +643,7 @@
         </rect>
        </property>
        <property name="text">
-        <string>图片保存开关</string>
+        <string>SAVE IMAGE</string>
        </property>
       </widget>
      </widget>
@@ -493,7 +657,7 @@
        </rect>
       </property>
       <property name="title">
-       <string>相机设定</string>
+       <string>CAMERA SET</string>
       </property>
      </widget>
      <widget class="QGroupBox" name="groupBox_6">
@@ -506,10 +670,10 @@
        </rect>
       </property>
       <property name="title">
-       <string>其他设定</string>
+       <string>OTHERS</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="pushButton">
+     <widget class="QPushButton" name="saveConfig2_Button">
       <property name="geometry">
        <rect>
         <x>670</x>
@@ -523,9 +687,14 @@
       </property>
      </widget>
     </widget>
+    <widget class="QWidget" name="tab_2">
+     <attribute name="title">
+      <string>SET MAIN</string>
+     </attribute>
+    </widget>
     <widget class="QWidget" name="tab2">
      <attribute name="title">
-      <string>IO设定</string>
+      <string>I/O</string>
      </attribute>
      <widget class="QLineEdit" name="lineEdit_5">
       <property name="geometry">

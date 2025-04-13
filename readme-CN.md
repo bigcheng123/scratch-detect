@@ -57,6 +57,10 @@ pip install -r requirement-trg.txt
 ```
 3.torch及torchvision文件较大，下载较缓慢，可通过国内源（清华源/阿里源等）进行下载<br>
 并将下载好的文件放置在D:\code\scratch-detect\install_torch\文件夹内、放入后可使用以下代码进行安装
+download torch可 ↓
+https://download.pytorch.org/whl/torch/
+download torchvision ↓
+https://download.pytorch.org/whl/torchvision/
 ```bash
 pip install -r requirement-torch Local Installation.txt
 ```

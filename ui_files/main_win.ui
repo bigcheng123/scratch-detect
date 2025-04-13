@@ -677,7 +677,7 @@ border-radius:0px;}</string>
                 <number>0</number>
                </property>
                <item>
-                <widget class="QPushButton" name="fileButton_3">
+                <widget class="QPushButton" name="Button_setting">
                  <property name="minimumSize">
                   <size>
                    <width>40</width>

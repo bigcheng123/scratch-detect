@@ -1,6 +1,6 @@
 {
   "iou": 0.77,
-  "conf": 0.8,
+  "conf": 0.87,
   "rate": 11,
   "latency": 0,
   "auto_save": 0,

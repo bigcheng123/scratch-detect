@@ -1,5 +1,5 @@
 # import python library ↓
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMenu, QAction
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMenu, QAction, QMessageBox
 from PyQt5.QtCore import Qt, QPoint, QTimer, QThread, pyqtSignal, QTime, QDateTime
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QIcon
 from pathlib import Path
@@ -19,7 +19,7 @@ import serial
 from sql_folder import SQL_write
 from ui_files.main_win import Ui_mainWindow
 from ui_files.dialog.rtsp_win import Window
-from ui_files.setting_TRG import Ui_TRG
+from ui_files.setting_form import Ui_setting
 from models.experimental import attempt_load
 from utils.datasets import LoadImages, LoadWebcam, LoadStreams
 from utils.CustomMessageBox import MessageBox
@@ -52,13 +52,12 @@ feedback_data_D3 = None
 # Initialization function "SQL_is_open", SQL writing disabled by default //初始化函数：SQL_is_open，默认不开启SQL写入
 SQL_is_open = False
 sensor_is_open = False
-modbus_ip = "192.168.3.110"  # Modbus 服务器 IP
-modbus_port = 502  # 默认 Modbus TCP 端口
+modbus_tcp_ip = "127.0.0.1"  # Modbus 服务器 IP ,可使用 sokit等串口调试工具建立一个 TCP服务器 地址
+modbus_tcp_port = 502  # 默认 Modbus TCP 端口
 sql_server_ip = '172.18.136.183'  # 不在一个域内的账户 只能使用IP 连接SQL服务器 , 不可使用计算机名称, SUMITOMORIKO/***
 
-
 # ↓ Class detector  检测类 created by yoloV5
-class DetThread(QThread):  # ## 检测功能主线程  继承 QThread
+class DetThread(QThread):  # 检测功能主线程  继承 QThread
     # 定义PYQT信号
     send_img_ch0 = pyqtSignal(np.ndarray)  # ## CH0 output image
     send_img_ch1 = pyqtSignal(np.ndarray)  # ## CH1 output image
@@ -278,7 +277,7 @@ class DetThread(QThread):  # ## 检测功能主线程  继承 QThread
                     # Inference prediction
                     # TODO ： 原来的代码  输出 推理后的 图像  im0 = with box  imc= without box
                     if self.pred_flag and self.is_continue:  # 预测后 再输出图像  add box 为可选项目
-                        add_box = myWin.plot_box_CheckBox.isChecked()
+                        add_box = mainWin.plot_box_CheckBox.isChecked()
 
                         # pred = model(img, augment=augment)[0] # 预测  使用loadWebcam是 加载的model
                         # print('pred_flag = true pred')
@@ -393,8 +392,8 @@ class DetThread(QThread):  # ## 检测功能主线程  继承 QThread
                                                                          f'{det_name}_' + time.strftime(
                                                                              '%Y_%m_%d_%H_%M_%S',
                                                                              time.localtime()) + f'_Cam{label_chanel}_' + f'{det_confidence}_' + '.jpg')
-                                                # todo funtion auto_save : 选择SAVE图像类型 box
-                                                add_box = myWin.plot_box_CheckBox.isChecked()
+                                                # todo function auto_save : 选择SAVE图像类型 box
+                                                add_box = mainWin.plot_box_CheckBox.isChecked()
                                                 # cv2.imwrite(save_path, im0)  # im0 = im0s.copy()  with box
                                                 # cv2.imwrite(save_path, imc)  # imc = no box
                                                 im = imc if not add_box else im0
@@ -402,7 +401,7 @@ class DetThread(QThread):  # ## 检测功能主线程  继承 QThread
                                                 # print('plot_box_CheckBox', myWin.plot_box_CheckBox.isChecked())
                                                 print(
                                                     str(f'save as .jpg im{i} , CAM = {label_chanel},save_path={save_path}'))  # & str(save_path))
-                                                print('CheckBox_autoSave', myWin.CheckBox_autoSave.isChecked())
+                                                print('CheckBox_autoSave', mainWin.CheckBox_autoSave.isChecked())
 
                                 # print('detection is running')
 
@@ -524,39 +523,17 @@ class DetThread(QThread):  # ## 检测功能主线程  继承 QThread
         # except Exception as e:
         #     self.send_msg.emit('%s' % e)
 
-
-def read_sensor():  ### 检查触发开关
-    global ser2
-    # print("in read sensor")
-    # ser2 = serial.Serial('com9', 38400, 8, 'N', 1, 0.3)    #将串口设置为全局变量可有效降低通讯延时，def内延时0.3~4S不等，全局变量0.3S
-    # modbus_rtu model ↓----------------------------------
-    if not ser2 == None:
-        sensor = modbus_rtu.writedata(ser2, '01 02 00 00 00 01 B9 CA')
-        if sensor == '010201016048':
-            return True
-        else:
-            return False
-    return False
-    # modbus_tcp model ↓----------------------------------
-    # try:
-    #     self.client, self.ret, error = modbus_tcp.modbustcp_open_port(modbus_ip, modbus_port)  # 打开端口
-    # except Exception as e:
-    #     print('tcp openport erro -1', e)
-    #     self.statistic_msg(str(e))
-
-
-####  ↓ Class Main Window 主窗口
+# ↓ Class Main Window 主窗口
 class MainWindow(QMainWindow, Ui_mainWindow):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
         # self.LoadStreams_thread = None
         self.setupUi(self)
-        self.m_flag = False
+        self.mouse_flag = False
 
-        # style 1: window can be stretched
+        # style 1: window can be stretched ↓
         # self.setWindowFlags(Qt.CustomizeWindowHint | Qt.WindowStaysOnTopHint)
-
-        # style 2: window can not be stretched
+        # style 2: window can not be stretched ↓
         self.setWindowFlags(Qt.Window | Qt.FramelessWindowHint
                             | Qt.WindowSystemMenuHint | Qt.WindowMinimizeButtonHint | Qt.WindowMaximizeButtonHint)
         # self.setWindowOpacity(0.85)  # Transparency of window
@@ -589,33 +566,33 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
         # yolov5 thread
         self.det_thread = DetThread()
-        self.model_type = self.comboBox_model.currentText()  ### get model from combobox
-        self.device_type = self.comboBox_device.currentText()  ###  get device type from combobox
-        self.source_type = self.comboBox_source.currentText()  ###  get device type from combobox
-        self.port_type = self.comboBox_port.currentText()  ###  get port type from combobox
+        self.model_type = self.comboBox_model.currentText()  # get model from combobox
+        self.device_type = self.comboBox_device.currentText()  # get device type from combobox
+        self.source_type = self.comboBox_source.currentText()  # get device type from combobox
+        self.port_type = self.comboBox_port.currentText()  # get port type from combobox
         self.det_thread.weights = "./pt/%s" % self.model_type  # difined
         self.det_thread.device = self.device_type  # difined  device
         self.det_thread.source = self.source_type  # get origin source index
         self.det_thread.percent_length = self.progressBar.maximum()
-        #### the connect funtion transform to  def run_or_continue(self):
-        #### tab0-mutil
+        # the connect function transform to  def run_or_continue(self):
+        # tab0-mutil
         self.det_thread.send_img_ch0.connect(lambda x: self.show_image(x, self.video_label_ch0))
         self.det_thread.send_img_ch1.connect(lambda x: self.show_image(x, self.video_label_ch1))
         self.det_thread.send_img_ch2.connect(lambda x: self.show_image(x, self.video_label_ch2))
         self.det_thread.send_img_ch3.connect(lambda x: self.show_image(x, self.video_label_ch3))
         self.det_thread.send_img_ch4.connect(lambda x: self.show_image(x, self.video_label_ch11))
         self.det_thread.send_img_ch5.connect(lambda x: self.show_image(x, self.video_label_ch12))
-        #### tab-1
+        # tab-1
         self.det_thread.send_img_ch0.connect(lambda x: self.show_image(x, self.video_label_ch4))
-        #### tab-2
+        # tab-2
         self.det_thread.send_img_ch1.connect(lambda x: self.show_image(x, self.video_label_ch5))
-        #### tab-3
+        # tab-3
         self.det_thread.send_img_ch2.connect(lambda x: self.show_image(x, self.video_label_ch6))
-        #### tab-4
+        # tab-4
         self.det_thread.send_img_ch3.connect(lambda x: self.show_image(x, self.video_label_ch7))
-        #### tab-5
+        # tab-5
         self.det_thread.send_img_ch4.connect(lambda x: self.show_image(x, self.video_label_ch8))
-        #### tab-6
+        # tab-6
         self.det_thread.send_img_ch5.connect(lambda x: self.show_image(x, self.video_label_ch9))
 
         self.det_thread.send_statistic.connect(self.show_statistic)
@@ -628,38 +605,46 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.rtspButton.clicked.connect(self.chose_rtsp)
 
         self.runButton.clicked.connect(self.run_or_continue)
-        # self.runButton_modbus.clicked.connect(self.modbus_on_off)
-        self.runButton_modbus.clicked.connect(self.modbustcp_on_off)
+        # self.runButton_modbus.clicked.connect(self.modbus_on_off) # modbusRTU mode
+        self.runButton_modbus.clicked.connect(self.modbustcp_on_off) #modbusTCP mode
         self.stopButton.clicked.connect(self.stop)
 
         self.comboBox_model.currentTextChanged.connect(self.change_model)
         self.comboBox_device.currentTextChanged.connect(self.change_device)
         self.comboBox_source.currentTextChanged.connect(self.change_source)
         self.comboBox_port.currentTextChanged.connect(self.change_port)
-
         self.confSpinBox.valueChanged.connect(lambda x: self.change_val(x, 'confSpinBox'))
         self.confSlider.valueChanged.connect(lambda x: self.change_val(x, 'confSlider'))
         self.iouSpinBox.valueChanged.connect(lambda x: self.change_val(x, 'iouSpinBox'))
         self.iouSlider.valueChanged.connect(lambda x: self.change_val(x, 'iouSlider'))
         self.rateSpinBox.valueChanged.connect(lambda x: self.change_val(x, 'rateSpinBox'))
         self.rateSlider.valueChanged.connect(lambda x: self.change_val(x, 'rateSlider'))
-
         self.checkBox_latency.clicked.connect(self.latency_check)
         self.CheckBox_autoSave.clicked.connect(self.auto_save_folder)
         self.pred_CheckBox.clicked.connect(self.pred_run)
+        self.load_parameters()  # loading setting
+        self.actionGeneral.triggered.connect(self.setting_page_show)  # 设置按键跳转至设置UI
+        self.Button_setting.clicked.connect(self.setting_page_show)  # 设置按键跳转至设置UI
 
-        self.load_setting()  # Set MainWindow
-
-        self.actionGeneral.triggered.connect(self.setting_ui)  # 设置按键跳转至设置UI
-        # # 加载设置页选项，开启com口
-        # setting_page.runsql()
-        # setting_page.sensor_on_off()
         self.dateTimeEdit.setDateTime(QDateTime.currentDateTime())  # emit dateTime to UI
+
+    def read_sensor(self):  ### 检查触发开关
+        global ser2
+        # print("in read sensor")
+        # ser2 = serial.Serial('com9', 38400, 8, 'N', 1, 0.3)    #将串口设置为全局变量可有效降低通讯延时，def内延时0.3~4S不等，全局变量0.3S
+        # modbus_rtu model ↓----------------------------------
+        if not ser2 is None:
+            sensor = modbus_rtu.writedata(ser2, '01 02 00 00 00 01 B9 CA')
+            if sensor == '010201016048':
+                return True
+            else:
+                return False
+        return False
 
     def update_sensor_data(self):  ### 光纤开关信号reflash
         global output_box_list
         if sensor_is_open:
-            sensor_data = read_sensor()
+            sensor_data = self.read_sensor()
             # print("sensor_data", sensor_data)
         # current_state = False  # 初始状态为不活跃
         # if self.det_thread.isRunning():
@@ -766,9 +751,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         crc_code = str_data + ' ' + format(crc & 0xFF, '02X') + ' ' + format((crc >> 8) & 0xFF, '02X')
         return crc_code  # return str  crc_data: 01 06 00 0A 00 6F E9 E4
 
-    # def thread_mudbus_run(
-    #         self):  ###  PC → PLC  通讯线程 ↓  CRC校验计算 [站号(DEC) , 功能码(DEC), 软元件地址（DEC) , 读写位数/数据(DEC)] 示例raw_data = [1, 6, 10, 111]
-    #     return crc_code  # return HEX str , example crc_data: 01 06 00 0A 00 6F E9 E4
     def thread_mudbus_run(
             self):  ###  PC → PLC  通讯线程 ↓  CRC校验计算 [站号(DEC) , 功能码(DEC), 软元件地址（DEC) , 读写位数/数据(DEC)] 示例raw_data = [1, 6, 10, 111]
         global modbus_flag, okCounter, ngCounter, output_box_list
@@ -807,9 +789,9 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         # print(DO3_OFF)
         DO_ALL_OFF = '01 0F 33 0A 00 03 01 00 12 95'  # '01 0F 00 00 00 04 01 00 3E 96' ##OUT1-4  OFF  全部继电器关闭  初始化
 
-        self.port_type = self.comboBox_port.currentText()  # 6070:COM7  8072:5
+        self.port_type = self.comboBox_port.currentText()
         print(type(self.port_type), self.port_type)
-
+        self.ret = self.modbustcp_on_off.ret1
         if self.ret:  ### openport sucessfully
             # feedback_data = modbus_rtu.writedata(self.ser, DO_ALL_OFF)  ###OUT1-4  OFF  全部继电器关闭  初始化
             self.runButton_modbus.setChecked(True)
@@ -986,16 +968,16 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                     self.closeButton, title='Error', text='Connection Error: ' + str(error), time=2000,
                     auto=True).exec_()
                 print('port did not open')
-                try:
-                    self.ser, self.ret, error = modbus_rtu.openport(self.port_type, 9600, 5)  # 打开端口
-                    if self.ret:
-                        _thread.start_new_thread(myWin.thread_mudbus_run, ())  # 启动检测 信号 循环
-                except Exception as e:
-                    print('openport erro-2', e)
-                    self.statistic_msg(str(e))
+                # try:
+                #     self.ser, self.ret, error = modbus_rtu.openport(self.port_type, 9600, 5)  # 打开端口
+                #     if self.ret:
+                #         _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
+                # except Exception as e:
+                #     print('openport erro-2', e)
+                #     self.statistic_msg(str(e))
             else:  # self.ret is  True
                 self.runButton_modbus.setChecked(True)
-                _thread.start_new_thread(myWin.thread_mudbus_run, ())  # 启动检测 信号 循环
+                _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
                 # self.runButton_modbus.setStyleSheet('background-color:rgb(0,0,0)')  ### background = red
         else:  # shut down modbus
             print('runButton_modbus.is unChecked')
@@ -1004,41 +986,37 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             print('shut down modbus_flag = False')  ####  ###
 
     def modbustcp_on_off(self):  # modbus_tcp 控制开关 open port ↓
-        global modbus_flag
+        global modbus_flag , modbus_tcp_ip, modbus_tcp_port
         # if not modbus_flag:
         if self.runButton_modbus.isChecked():
             modbus_flag = True
+            ret1 = None
+            client =None
+            error = None
             # print('modbustcp is on, flag is true')
             try:
-                self.client, self.ret, error = modbus_tcp.modbustcp_open_port(modbus_ip, modbus_port)  # 打开端口
+                client, ret1, error = modbus_tcp.modbustcp_open_port(modbus_tcp_ip, modbus_tcp_port)  # 打开端口
             except Exception as e:
                 print('tcp openport erro -1', e)
                 self.statistic_msg(str(e))
-
-            if not self.ret: # show the info if modbus_tcp  connection failed
+            if not ret1:  # show the info if modbus_tcp  connection failed
                 self.runButton_modbus.setChecked(False)
                 # self.runButton_modbus.setStyleSheet('background-color:rgb(220,0,0)') ### background = red
                 MessageBox(
-                    self.closeButton, title='Error', text='Connection Error: ' + str(error), time=2000,
+                    self.closeButton, title='Error', text='ModbusTCP Failed to connect !: ' + str(error), time=2000,
                     auto=True).exec_()
-                print('port did not open')
-                try:
-                    self.client, self.ret, error = modbus_tcp.modbustcp_open_port(modbus_ip, modbus_port)  # 打开端口
-                    if self.ret:
-                        _thread.start_new_thread(myWin.thread_mudbus_run, ())  # 启动检测 信号 循环
-                except Exception as e:
-                    print('openport erro-2', e)
-                    self.statistic_msg(str(e))
+                print('ModbusTCP Failed to connect !')
+
             else:  # self.ret is  True
                 print('modbus_tcp connected successful')
                 self.runButton_modbus.setChecked(True)
-                _thread.start_new_thread(myWin.thread_mudbus_run, ())  # 启动检测 信号 循环
+                _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
                 # self.runButton_modbus.setStyleSheet('background-color:rgb(0,0,0)')  ### background = red
         else:  # shut down modbus
             print('runButton_modbus.is unChecked')
             modbus_flag = False
             self.runButton_modbus.setChecked(False)
-            print('shut down modbus_flag = False')  ####  ###
+            print('shut down modbus_flag = False')  #
 
     def stop(self):  # connect stopButton  主窗口停止按键
         if not self.det_thread.jump_out:
@@ -1210,7 +1188,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             open_fold = os.getcwd()
         name, _ = QFileDialog.getOpenFileName(self, 'Video/image', open_fold, "Pic File(*.mp4 *.mkv *.avi *.flv "
                                                                               "*.jpg *.png)")
-        if name:  ###打开对象属于指定类型的文件时 ↓
+        if name:  # 打开对象属于指定类型的文件时 ↓
             self.det_thread.source = name
             self.textBrowser.setText(name)
             self.statistic_msg('Loaded file：{}'.format(os.path.basename(name)))
@@ -1231,14 +1209,20 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         if event.button() == Qt.LeftButton:
             if 0 < self.m_Position.x() < self.groupBox.pos().x() + self.groupBox.width() and \
                     0 < self.m_Position.y() < self.groupBox.pos().y() + self.groupBox.height():
-                self.m_flag = True
+                self.mouse_flag = True
 
     def mouseMoveEvent(self, QMouseEvent):
-        if Qt.LeftButton and self.m_flag:
+        if Qt.LeftButton and self.mouse_flag:
             self.move(QMouseEvent.globalPos() - self.m_Position)
 
     def mouseReleaseEvent(self, QMouseEvent):
-        self.m_flag = False
+        self.mouse_flag = False
+
+    def setting_page_show(self):  # 菜单栏设定 genaral
+        # print("into setting")
+        # setting_page().show()
+        self.trg_setting_ui = setting_page()
+        self.trg_setting_ui.show()
 
     @staticmethod
     def show_image(img_src, label):  ### input img_src  output to pyqt label
@@ -1266,6 +1250,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
         except Exception as e:
             print(repr(e))
+
     def show_statistic(self, statistic_dic):  ### predicttion  output  resultWidget
         global results, okCounter, ngCounter, output_box_list
         try:
@@ -1337,14 +1322,10 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
         except Exception as e:
             print(repr(e))
-    def load_setting(self):  ### laoding mainwindow object...'
-        print(' loading mainwindows setting')
-        config_file = 'config/setting.json'
-        ### 加载 子窗口参数 ↓
-        loading_other_setting = setting_page()
-        loading_other_setting.runsql()
-        loading_other_setting.sensor_on_off()
 
+    def load_parameters(self):  ### laoding mainwindow object...'
+        print(' run load_parameters() at mainwindows')
+        config_file = 'config/setting.json'
         if not os.path.exists(config_file):
             iou = 0.26
             conf = 0.33
@@ -1385,7 +1366,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 model = 0
                 add_box = False
             else:
-                print('laoding mainwindow object...', config_file, config)
+                print('loading completed...', config_file, config)
                 iou = config['iou']
                 conf = config['conf']
                 rate = config['rate']
@@ -1397,19 +1378,42 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 model = config['model']
                 add_box = config['add_box']
 
-        ### 依据存储的json文件 更新 变量值
+        # 依据存储的json文件 更新 UI 显示
         self.confSpinBox.setValue(conf)
         self.iouSpinBox.setValue(iou)
         self.rateSpinBox.setValue(rate)
         self.checkBox_latency.setCheckState(latency)
         self.det_thread.rate_check = latency
         self.CheckBox_autoSave.setCheckState(auto_save)
-        self.auto_save_folder()  ### creat path of  auto_save img
-        self.comboBox_device.setCurrentIndex(device)  # 设置当前索引号 "device": 0
-        self.comboBox_port.setCurrentIndex(port)  # 设置当前索引号 "port": "COM0"
-        self.comboBox_source.setCurrentIndex(source)  # 设置当前索引号 "port": "COM0"
-        self.comboBox_model.setCurrentIndex(model)  # 设置当前索引号 "port": "COM0"
-        self.plot_box_CheckBox.setCheckState(add_box)
+        self.auto_save_folder()  # creat path of  auto_save img
+        self.comboBox_device.setCurrentIndex(device)  #
+        self.comboBox_port.setCurrentIndex(port)  #
+        self.comboBox_source.setCurrentIndex(source)  #
+        self.comboBox_model.setCurrentIndex(model)  #
+        self.plot_box_CheckBox.setCheckState(add_box)  #
+
+    def save_mainwin_settings(self):
+        #### read current paraments
+        config_path = 'config/setting.json'
+        config = dict()
+        config['iou'] = self.iouSpinBox.value()
+        config['conf'] = self.confSpinBox.value()  # self.confSpinBox.value()
+        config['rate'] = self.rateSpinBox.value()
+        config['latency'] = self.checkBox_latency.checkState()  # Latency function .checkState()
+        config['auto_save'] = self.CheckBox_autoSave.checkState()  # Auto Save check box .checkState()
+        config['device'] = self.comboBox_device.currentIndex()  # 获取当前索引号
+        config['port'] = self.comboBox_port.currentIndex()  # 获取当前索引号
+        config['source'] = self.comboBox_source.currentIndex()  # 获取当前索引号
+        config['model'] = self.comboBox_model.currentIndex()  # 获取当前索引号 20240403
+        config['add_box'] = self.plot_box_CheckBox.checkState()
+        # config['On/Off State'] =
+        ####新增参数 请在此处添加↑ ， 运行UI后 点击关闭按钮 后保存为 json文件 地址= ./config/setting.json
+        config_json = json.dumps(config, ensure_ascii=False, indent=2)
+        print('content config_json:', config_json)
+        with open(config_path, 'w', encoding='utf-8') as f:
+            f.write(config_json)
+            print('confi_json write')
+
     def closeEvent(self, event):  ###点击关闭开关按钮执行 以下
         print('execute : closeEvent of main window')
         global modbus_flag, sensor_is_open, SQL_is_open, ser2
@@ -1427,61 +1431,29 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         if SQL_is_open:
             closesql()
             SQL_is_open = False
-        #### read current paraments
-        config_path = 'config/setting.json'
-        config = dict()
-        config['iou'] = self.iouSpinBox.value()
-        config['conf'] = self.confSpinBox.value()  # self.confSpinBox.value()
-        config['rate'] = self.rateSpinBox.value()
-        config['latency'] = self.checkBox_latency.checkState()  ### Latency funtion .checkState()
-        config['auto_save'] = self.CheckBox_autoSave.checkState()  ### Auto Save check box .checkState()
-        config['device'] = self.comboBox_device.currentIndex()  ### 获取当前索引号
-        config['port'] = self.comboBox_port.currentIndex()  ### 获取当前索引号
-        config['source'] = self.comboBox_source.currentIndex()  ### 获取当前索引号
-        config['model'] = self.comboBox_model.currentIndex()  ### 获取当前索引号 20240403
-        config['add_box'] = self.plot_box_CheckBox.checkState()
-
-        # config['sensor_port'] = self.checkbox.isChecked() # 保存传感器COM口
-        # config['sensor_switch'] = self.checkBox_3.checkState()  # 保存开关勾选状态
-        # config['SQL_switch'] = self.checkBox_2.checkState()  # 保存开关勾选状态
-        # config['server'] = self.lineEdit.text()
-        # config['database'] = self.lineEdit_2.text()
-        # config['username'] = self.lineEdit_3.text()
-        # config['password'] = self.lineEdit_4.text()
-
-        # config['On/Off State'] =
-        ####新增参数 请在此处添加↑ ， 运行UI后 点击关闭按钮 后保存为 json文件 地址= ./config/setting.json
-        config_json = json.dumps(config, ensure_ascii=False, indent=2)
-        print('content config_json:', config_json)
-        with open(config_path, 'w', encoding='utf-8') as f:
-            f.write(config_json)
-            print('confi_json write')
+        self.save_mainwin_settings()
         MessageBox(
             self.closeButton, title='Tips', text='Terminate Program.', time=2000, auto=True).exec_()
         sys.exit(0)
-    def setting_ui(self):  # 菜单栏设定 genaral
-        print("into setting")
-        self.trg_setting_ui = setting_page()
-        self.trg_setting_ui.show()
-
 
 # Class child Window子窗口  参数设置页面 created by PyQt
-class setting_page(QMainWindow, Ui_TRG):
+class setting_page(QMainWindow, Ui_setting):
     def __init__(self):
         super().__init__()
+        self.server = None
+        self.SQL_switch = None
+        self.sensor_switch = None
         self.setupUi(self)
-        # SQL勾选开关
-        self.checkBox_2.clicked.connect(self.runsql)
-        # self.runsql()
-        # 传感器com口勾选开关
-        self.checkBox_3.clicked.connect(self.sensor_on_off)
-        self.load_setting()
+        # function connecting ↓
+        self.saveConfig2_Button.clicked.connect(self.save_settings)
+        self.sql_connect_Button.clicked.connect(self.run_sql)
+        self.SensorPort_connect_Button.clicked.connect(self.sensor_on_off)
+        config = self.load_setting()
 
-    def load_setting(self):  #### sql config setting.json'
-        global sql_server_ip
+    def load_setting(self):  # sql config setting.json'
+        global sql_server_ip, config
         config_file = 'config/setting2.json'
-
-        if not os.path.exists(config_file):  #### 如果.json文件不存在则创建文件 ↓
+        if not os.path.exists(config_file):  # 如果.json文件不存在则创建文件 ↓
             sensor_switch = 0
             SQL_switch = 2
             server = sql_server_ip
@@ -1501,101 +1473,192 @@ class setting_page(QMainWindow, Ui_TRG):
         else:
             config = json.load(open(config_file, 'r', encoding='utf-8'))
             print('setting_page loading config:', config_file, config)
-            if len(config) < 6:  ### 参数不足时  补充参数,否则无法启动
+            if len(config) < 6:  #  参数不足时  补充参数,否则无法启动
                 print("len", len(config))
-                sensor_switch = 0
-                SQL_switch = 2
+                self.sensor_switch = 0
+                self.SQL_switch = 2
                 self.server = sql_server_ip  # 不在一个域内的账户 只能使用IP 连接SQL服务器
                 self.database = 'PE_DataBase'
                 self.username = 'TRG-PE'
                 self.password = '705705'
-            else:  ####更新UI参数 ↓
-                sensor_switch = config['sensor_switch']
-                SQL_switch = config['SQL_switch']
+            else:  # 更新UI参数 ↓
+                self.sensor_switch = config['sensor_switch']
+                self.sensor_port = config['sensor_port']
+                self.SQL_switch = config['SQL_switch']
                 self.server = config['server']
                 self.database = config['database']
                 self.username = config['username']
                 self.password = config['password']
 
-        ### 依据存储的json文件 更新 ui参数
+        # 依据存储的json文件 更新 ui参数
+        self.checkBox_sensor.setCheckState(config['sensor_switch'])
+        self.comboBox_sensor_port.setCurrentIndex(config['sensor_port'])
+        self.checkBox_sql.setCheckState(config['SQL_switch'])
+        self.lineEdit_server.setText(config['server'])
+        self.lineEdit_db.setText(config['database'])
+        self.lineEdit_user.setText(config['username'])
+        self.lineEdit_pw.setText(config['password'])
 
-        self.checkBox_2.setCheckState(SQL_switch)
-        self.checkBox_3.setCheckState(sensor_switch)
+        self.checkBox_plc_enable.setCheckState(config['plc_switch'])
+        self.comboBox_rtu_port.setCurrentIndex(config['modbus_rtu_port'])
+        self.lineEdit_tcp_server.setText(config['modbus_tcp_server'])
+        self.lineEdit_tcp_port.setText(config['modbus_tcp_port'])
 
-    def closeEvent(self, event):
-        print("into setting close event")
-        # 保存设置窗口参数
-        self.save_setting()
-        event.accept()
 
-    def save_setting(self):
-        print("into save setting")
+        return config
+
+    def save_settings(self):
+        print("Execute save setting at setting page")
         config_path = 'config/setting2.json'
         config = dict()
-        # config['sensor_port'] = self.checkbox.isChecked()  # 保存传感器COM口
-        config['sensor_switch'] = self.checkBox_3.checkState()  # 保存开关勾选状态
-        config['SQL_switch'] = self.checkBox_2.checkState()  # 保存开关勾选状态
-        config['server'] = self.lineEdit.text()
-        config['database'] = self.lineEdit_2.text()
-        config['username'] = self.lineEdit_3.text()
-        config['password'] = self.lineEdit_4.text()
-        # 新增参数 请在此处添加↑ ， 运行UI后 点击关闭按钮 后保存为 json文件 地址= ./config/setting.json
-        config_json = json.dumps(config, ensure_ascii=False, indent=2)
-        with open(config_path, 'w', encoding='utf-8') as f:
-            f.write(config_json)
-            print('confi_json2 write')
+        config['sensor_switch'] = self.checkBox_sensor.checkState()  # 保存开关勾选状态
+        config['sensor_port'] = self.comboBox_sensor_port.currentIndex()  # 获取当前索引号
+        config['SQL_switch'] = self.checkBox_sql.checkState()  # 保存开关勾选状态
+        config['server'] = self.lineEdit_server.text()
+        config['database'] = self.lineEdit_db.text()
+        config['username'] = self.lineEdit_user.text()
+        config['password'] = self.lineEdit_pw.text()
 
-    def runsql(self):
-        # print("into runsql")
-        # print("checkbox2", self.checkBox_2.isChecked())
-        if self.checkBox_2.isChecked():
-            SQL_write.opensql(self.server, self.database, self.username, self.password)  # 打开SQL
-            global SQL_is_open
-            SQL_is_open = True
+        config['plc_switch'] = self.checkBox_plc_enable.checkState()
+        config['modbus_rtu_port'] = self.comboBox_rtu_port.currentIndex()
+        config['modbus_tcp_server'] = self.lineEdit_tcp_server.text()
+        config['modbus_tcp_port'] = self.lineEdit_tcp_port.text()
 
-        if not self.checkBox_2.isChecked():
+        # 新增参数 请在此处添加↑ ， 运行UI后 点击 save按钮，保存为 json文件 地址= ./config/setting2.json
+        try:
+            config_json = json.dumps(config, ensure_ascii=False, indent=2)
+            with open(config_path, 'w', encoding='utf-8') as f:
+                f.write(config_json)
+                print('confi_json2 write', config_path, config)
+        except Exception as e:
+            QMessageBox.critical(
+                self,  # parent window
+                'Save Parameters Error',  # title
+                f'Failed to write confi_json2:\n{str(e)}',  # message
+                QMessageBox.Ok
+            )
+        else:
+            QMessageBox.information(
+                self,  # parent window
+                'Save Parameters Successfully',  # title
+                f'write confi_json2 Successfully:\n{config_json}',  # message
+                QMessageBox.Ok
+            )
+
+    def closeEvent(self, event):
+        print("Execute close event()")
+        # 保存设置窗口参数
+        # self.save_settings()
+        event.accept()
+
+    def run_sql(self): # sql_connect_Button
+        print("Execute function run_sql")
+        print("checkbox_sql", self.checkBox_sql.isChecked())
+        global SQL_is_open
+        if self.checkBox_sql.isChecked():
+            try:
+                SQL_is_open = SQL_write.opensql(self.server, self.database, self.username, self.password)  # 打开SQL
+            except Exception as e:
+                SQL_is_open = False
+                QMessageBox.critical(
+                    self,  # parent window
+                    'Open Port Error',  # title
+                    f'Failed to connect sql server:\n{str(e)}',  # message
+                    QMessageBox.Ok
+                )
+        if not self.checkBox_sql.isChecked():
             try:
                 SQL_write.closesql()
                 SQL_is_open = False
-            except:
-                print("Do not use SQL server")
+            except Exception as e:
+                print("Do not use SQL server", e)
+                QMessageBox.critical(
+                    self,  # parent window
+                    'SQL Error',  # title
+                    f'Failed to disconnect sql server:\n{str(e)}',  # message
+                    QMessageBox.Ok
+                )
+        if not SQL_is_open:
+            QMessageBox.critical(
+                self,  # parent window
+                'SQL Error',  # title
+                f'Failed to connect sql server:',  # message
+                QMessageBox.Ok
+            ) ##
 
-    def sensor_on_off(self):
+    def sensor_on_off(self): # SensorPort_connect_Button
         global ser2, ret2, sensor_is_open
-        if self.checkBox_3.isChecked():
+        print('Execute sensor_on_off', self.checkBox_sensor.isChecked())
+        sensor_port1 = mainWin.comboBox_port.currentText()
+        print('parameters: port1', sensor_port1)
+        sensor_port2 = self.comboBox_sensor_port.currentText()
+        print('parameters: sensor_port2',sensor_port2)
+        if self.checkBox_sensor.isChecked():
             try:
-                ser2 = serial.Serial('COM9', 38400, 8, 'N', 1, 0.3)
-                sensor_is_open = True
-                print("sensor is open")
-
+                ser2 = serial.Serial(sensor_port2, 38400, 8, 'N', 1, 0.3)
+                print("Try to connect sensor_port2")
             except Exception as e:
                 print('openport error-2', e)
-
-        if not self.checkBox_3.isChecked():
-            # self.checkBox_2.setChecked(False)
+                sensor_is_open = False
+                QMessageBox.critical(
+                    self,  # parent window
+                    'Open Sensor Port Error',  # title
+                    f'Failed to open sensor port:\n{str(e)}',  # message
+                    QMessageBox.Ok
+                )
+            else:
+                print("sensor connect successfully")
+                sensor_is_open = True
+        if not self.checkBox_sensor.isChecked():
             sensor_is_open = False
-            if not ser2 == None:  # sensor port has been open
-                try:
+            if ser2 :  # sensor port turn on
+                try: # try to close the port
                     ser2.close()
                     print("sensor is close")
                     ser2 = None
                 except Exception as e:
                     print('close port error-2', e)
+                    # Error popup for closing port
+                    QMessageBox.critical(
+                        self,  # parent window
+                        'Close Sensor Port Error',  # title
+                        f'Failed to close sensor port:\n{str(e)}',  # message
+                        QMessageBox.Ok  # button
+                    )
                     self.statistic_msg(str(e))
-
+        if not sensor_is_open:
+            QMessageBox.critical(
+                self,  # parent window
+                'Open Sensor Port Error',  # title
+                f'Failed to open sensor port',  # message
+                QMessageBox.Ok
+            )
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    myWin = MainWindow()  #### 实例化
-    myWin.show()
-    print('prameters load completed')
-    myWin.runButton_modbus.setChecked(True)
-    myWin.modbus_on_off()  # start modbus rtu
-    myWin.modbustcp_on_off()  # start modbus tcp
+    mainWin = MainWindow()  # 实例化
+    mainWin.show()
+    # 加载 子窗口参数 ↓
+    _setting_page = setting_page()
+    config = _setting_page.load_setting()
+    print('setting page config:',config)
+    if config['sensor_switch']:
+        print('sensor_switch on', config['sensor_switch'])
+        _setting_page.sensor_on_off()
+    if config['SQL_switch']:
+        print('SQL_switch on', config['SQL_switch'])
+        _setting_page.run_sql()
+    # update parameters
+    modbus_tcp_ip = config['modbus_tcp_server']
+    modbus_tcp_port = config['modbus_tcp_port']
+
+    mainWin.runButton_modbus.setChecked(True)
+    # mainWin.modbus_on_off()  # start modbus rtu
+    mainWin.modbustcp_on_off()  # start modbus tcp
+
     # time.sleep(1)
     # print('thread_mudbus_run start')
     # _thread.start_new_thread(myWin.thread_mudbus_run, ())  #### 启动检测 信号 循环
-
     # 单独输出 调试模式 ↓
     # det_thread.send_img_ch0.connect(lambda x: cvshow_image(x))
 

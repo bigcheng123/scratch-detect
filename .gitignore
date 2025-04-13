@@ -114,7 +114,7 @@ ENV/
 env.bak/
 venv.bak/
 .idea
-
+.gitee
 # Spyder project settings
 .spyderproject
 .spyproject
@@ -154,7 +154,6 @@ folderName
 auto_save/jpg/
 !auto_save/jpg/.gitkeep
 
-
 ### 忽略特定目录下的所有文件和子目录（例如一个名为"temp"的目录）
 !runs/*
 !datasets/*
@@ -165,8 +164,6 @@ data/
 log/*
 
 ### !folderName/ 表示忽略 folderName里面的文件  而保留folderName文件夹
-
-
 
 /main-multicam.py
 /main-multicam2.py

@@ -57,7 +57,8 @@ conda activate yolov5_pyqt5
 pip install -r requirement-trg.txt
 ```
 3. Torch and torchvision files are large and download slowly. You can download them from domestic sources (Tsinghua source/Ali source, etc.)<br>
-Place the downloaded files in the D:\code\scratch-detect\install_torch\ folder. After placing them, you can use the following code to install them
+Place the downloaded files in the D:\code\scratch-detect\install_torch\ folder. After placing them, you can use the following code to install them<br>
+ torch download link : https://download.pytorch.org/whl/torch/
 ```bash
 pip install -r requirement-torch Local Installation.txt
 ```
