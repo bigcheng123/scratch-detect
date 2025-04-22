@@ -1,6 +1,6 @@
 # import python library ↓
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QMenu, QAction, QMessageBox
-from PyQt5.QtCore import Qt, QPoint, QTimer, QThread, pyqtSignal, QTime, QDateTime
+from PyQt5.QtCore import Qt, QPoint, QTimer, QThread, pyqtSignal, QDateTime
 from PyQt5.QtGui import QImage, QPixmap, QPainter, QIcon
 from pathlib import Path
 import sys
@@ -25,13 +25,12 @@ from utils.datasets import LoadImages, LoadWebcam, LoadStreams
 from utils.CustomMessageBox import MessageBox
 from utils.general import check_img_size, check_requirements, check_imshow, colorstr, non_max_suppression, \
     apply_classifier, scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path, clean_str
-# from utils.plots import colors, plot_one_box, plot_one_box_PIL
 from utils.plots import Annotator, colors, save_one_box, plot_one_box
 
 from utils.torch_utils import select_device, time_sync, load_classifier
 from utils.capnums import Camera
 from sql_folder.SQL_write import writesql, closesql
-import logging
+
 
 # ↓ set global variable 设置全局变量  ↓
 results = None
@@ -41,20 +40,24 @@ ngCounter = 0
 loopCounter = 0
 output_box_list = [0, 0]
 emit_frame_flag = True  # 测试传输frame到UI ,对检查循环速度的影响
-computer_is_open = False
+
 # 光电传感器状态初始化，默认为不活跃
 current_state = False  # 初始状态为不活跃
 # 光电传感器COM口设定
-# ser2 = serial.Serial('COM10', 38400, 8, 'N', 1, 0.3)
 ser2 = None
 ret2 = None
 feedback_data_D3 = None
+
 # Initialization function "SQL_is_open", SQL writing disabled by default //初始化函数：SQL_is_open，默认不开启SQL写入
 SQL_is_open = False
 sensor_is_open = False
-modbus_tcp_ip = "127.0.0.1"  # Modbus 服务器 IP ,可使用 sokit等串口调试工具建立一个 TCP服务器 地址
+modbus_tcp_ip = "192.168.3.110"  # Modbus 服务器 IP ,可使用 sokit等串口调试工具建立一个 TCP服务器 地址
 modbus_tcp_port = 502  # 默认 Modbus TCP 端口
 sql_server_ip = '172.18.136.183'  # 不在一个域内的账户 只能使用IP 连接SQL服务器 , 不可使用计算机名称, SUMITOMORIKO/***
+area_dic = {}
+area_min = None
+scratch_min = None
+scratch_qua = None
 
 # ↓ Class detector  检测类 created by yoloV5
 class DetThread(QThread):  # 检测功能主线程  继承 QThread
@@ -145,27 +148,24 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
 
         # Dataloader
         if webcam:  # self.source.isnumeric() or self.source.endswith('.txt') or
-            # print('if webcam is running')
             view_img = check_imshow()  # from utils.general
             cudnn.benchmark = True  # set True to speed up constant image size inference
             dataset = LoadStreams(self.source, img_size=imgsz,
                                   stride=stride)  # loadstreams  return self.sources, img, img0, None
-            # print('dataset type', type(dataset), dataset)
             bs = len(dataset)  # batch_size
-            # print('len(dataset)=', bs)
             # #### streams = LoadStreams
 
         else:  # load the images or .mp4
             print('if webcam false')
             dataset = LoadImages(self.source, img_size=imgsz, stride=stride)
             bs = 1  # batch_size
-        vid_path, vid_writer = [None] * bs, [None] * bs
+        # vid_path, vid_writer = [None] * bs, [None] * bs
 
         # Run inference 推理
         if device.type == 'cpu':  # != '0' or 'cpu'
             model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
         start_time = time.time()
-        t0 = time.time()
+        # t0 = time.time()
         count = 0
 
         # load  the camera's index 载入 摄像头号码
@@ -202,7 +202,7 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
             # _pred_flag = True
 
             if self.is_continue:
-                global results, ngCounter, okCounter, loopCounter, emit_frame_flag
+                global results, ngCounter, okCounter, loopCounter, emit_frame_flag, quantity_dic
                 det_flag = None
                 #  loadstreams // dataset = LoadStreams(self.source, img_size=imgsz, stride=stride)
                 for path, img, im0s, self.vid_cap in dataset:  # 由于dataset在RUN中运行 会不断更新，所以此FOR循环 不会穷尽
@@ -223,8 +223,6 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                     quantity_dic = {name: 0 for name in names}  # create diction
                     confidence_dic = {name: 0 for name in names}
                     area_dic = {name: 0 for name in names}
-                    # print('names:', names)
-                    # print('quantity_dic-1', quantity_dic)
                     count += 1  # ### FSP counter
                     if count % 30 == 0 and count >= 30:  # 大循环Loop 执行10的倍数次时，更新FSP
                         loopcycle = int(30 / (time.time() - start_time))  # 大 循环周期
@@ -574,6 +572,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.det_thread.device = self.device_type  # difined  device
         self.det_thread.source = self.source_type  # get origin source index
         self.det_thread.percent_length = self.progressBar.maximum()
+        self.setting = setting_page()
         # the connect function transform to  def run_or_continue(self):
         # tab0-mutil
         self.det_thread.send_img_ch0.connect(lambda x: self.show_image(x, self.video_label_ch0))
@@ -630,8 +629,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
     def read_sensor(self):  ### 检查触发开关
         global ser2
-        # print("in read sensor")
-        # ser2 = serial.Serial('com9', 38400, 8, 'N', 1, 0.3)    #将串口设置为全局变量可有效降低通讯延时，def内延时0.3~4S不等，全局变量0.3S
         # modbus_rtu model ↓----------------------------------
         if not ser2 is None:
             sensor = modbus_rtu.writedata(ser2, '01 02 00 00 00 01 B9 CA')
@@ -645,12 +642,9 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         global output_box_list
         if sensor_is_open:
             sensor_data = self.read_sensor()
-            # print("sensor_data", sensor_data)
-        # current_state = False  # 初始状态为不活跃
-        # if self.det_thread.isRunning():
+
         if sensor_is_open:
             global current_state
-            # print(current_state)
             new_state = sensor_data
             if new_state != current_state:
                 if sensor_data:
@@ -672,17 +666,11 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                     self.checkBox_8.setChecked(False)
                     self.checkBox_9.setChecked(False)
                     output_box_list = [0, 0]
-                    # if len(output_box_list):
-                    #     for i in len(output_box_list):
-                    #         output_box_list[i] = 0
                     print('reset output')
-                    time.sleep(0.5)  # wait the checkbox set false
+                    time.sleep(2)  # wait the checkbox set false
                     self.det_thread.is_continue = False
                     self.runButton.setChecked(False)
                     self.runButton.setText('RUN')
-                    # todo  此处执行寄存器写入 结束时 闪退
-                    # reset_register = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]  # 重置D20-D34
-                    # modbus_tcp.register_address(20, reset_register)
 
                 current_state = new_state
 
@@ -755,253 +743,117 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             self):  ###  PC → PLC  通讯线程 ↓  CRC校验计算 [站号(DEC) , 功能码(DEC), 软元件地址（DEC) , 读写位数/数据(DEC)] 示例raw_data = [1, 6, 10, 111]
         global modbus_flag, okCounter, ngCounter, output_box_list
         modbus_flag = True
-        DO0_ON = self.calculate_crc([1, 5, 80, 65280])  # hex2dec: 线圈ON=FF00 = 65280   地址 13064 = Y8  M80 = DEC 80 功能码 5
-        # print(DO0_ON)
-        DO0_OFF = self.calculate_crc([1, 5, 80, 0])  # hex2dec: 线圈OFF=0000 = 0   地址 13064 = Y8
-        # print(DO0_OFF)
-        DO1_ON = self.calculate_crc([1, 5, 81, 65280])  # hex2dec: 线圈ON=FF00 = 65280   地址 13065 = Y9
-        # print(DO2_ON)
-        DO1_OFF = self.calculate_crc([1, 5, 81, 0])  # hex2dec: 线圈OFF=0000 = 0  地址 13065 = Y9
-        # print(DO2_OFF)
-        DO2_ON = self.calculate_crc([1, 5, 82, 65280])  # hex2dec: 线圈ON=FF00 = 65280  地址 13066 = Y10
-        # print(DO2_ON)
-        DO2_OFF = self.calculate_crc([1, 5, 82, 0])  # hex2dec: 线圈OFF=0000 = 0   地址 13066 = Y10
-        # print(DO2_OFF)
-        DO3_ON = self.calculate_crc([1, 5, 83, 65280])  # hex2dec: 线圈ON=FF00 = 65280  ### NG信号输出  地址DEC格式 13067 = Y11
-        # print(DO3_ON)
-        DO3_OFF = self.calculate_crc([1, 5, 83, 0])  # hex2dec: 线圈OFF=0000 = 0 地址DEC格式 13067 = Y11
-        # print(DO3_OFF)
-        DO4_ON = self.calculate_crc([1, 5, 84, 65280])  # hex2dec: 线圈ON=FF00 = 65280 地址DEC格式 13068 = Y12
-        # print(DO3_ON)
-        DO4_OFF = self.calculate_crc([1, 5, 84, 0])  # hex2dec: 线圈OFF=0000 = 0 地址DEC格式 13067 = Y12
-        # print(DO3_OFF)
-        DO5_ON = self.calculate_crc([1, 5, 85, 65280])  # hex2dec: 线圈ON=FF00 = 65280 地址DEC格式 13068 = Y12
-        # print(DO3_ON)
-        DO5_OFF = self.calculate_crc([1, 5, 85, 0])  # hex2dec: 线圈OFF=0000 = 0 地址DEC格式 13067 = Y12
-        # print(DO3_OFF)
-        DO6_ON = self.calculate_crc([1, 5, 86, 65280])  # hex2dec: 线圈ON=FF00 = 65280 地址DEC格式 13068 = Y12
-        # print(DO3_ON)
-        DO6_OFF = self.calculate_crc([1, 5, 86, 0])  # hex2dec: 线圈OFF=0000 = 0 地址DEC格式 13067 = Y12
-        # print(DO3_OFF)
-        DO7_ON = self.calculate_crc([1, 5, 87, 65280])  # hex2dec: 线圈ON=FF00 = 65280 地址DEC格式 13068 = Y12
-        # print(DO3_ON)
-        DO7_OFF = self.calculate_crc([1, 5, 87, 0])  # hex2dec: 线圈OFF=0000 = 0 地址DEC格式 13067 = Y12
-        # print(DO3_OFF)
-        DO_ALL_OFF = '01 0F 33 0A 00 03 01 00 12 95'  # '01 0F 00 00 00 04 01 00 3E 96' ##OUT1-4  OFF  全部继电器关闭  初始化
 
         self.port_type = self.comboBox_port.currentText()
         print(type(self.port_type), self.port_type)
-        self.ret = self.modbustcp_on_off.ret1
+
         if self.ret:  ### openport sucessfully
-            # feedback_data = modbus_rtu.writedata(self.ser, DO_ALL_OFF)  ###OUT1-4  OFF  全部继电器关闭  初始化
             self.runButton_modbus.setChecked(True)
             print('thread_mudbus_run modbus_flag = True')
-            feedback_list = []
-
-            write_m20_on = self.calculate_crc([1, 5, 20, 65280])  # 预留触摸屏开关用,闭合M20线圈，给触摸屏电脑已开机信号
-            test_hex = self.calculate_crc([1, 16, 10, 2, 4, 0])  # 4294967295 寄存器溢出 写两个寄存器
-            # print(write_m20_on)
-            # modbus_rtu.writedata(self.ser, write_m20_on)  # 程序运行后闭合线圈M10
-            # print("M20已闭合", modbus_rtu.writedata(self.ser, write_m20_on))  # 050014ff00cc3e
-            # global write_m20_off
-            # global write_m21_off
-            # write_m20_off = self.calculate_crc([1, 5, 20, 0])  # 预留触摸屏开关用,断开M20线圈，给触摸屏电脑关机/检查程序关闭信号
-            # write_m21_off = self.calculate_crc([1, 5, 21, 0])
-            # read_m21 = self.calculate_crc([1, 1, 21, 1])  # GOT M21=检查启动/停止按钮 预留触摸屏开关用，读取M21线圈闭合状态，
-            # while self.runButton_modbus.isChecked() and modbus_flag:
-            #     m21_result = modbus_rtu.writedata(self.ser,
-            #                                       read_m21)  # 如果返回值为：'01 01 0B 01 8C 08'，启动检查；为'01 01 0B 00 8C 08'停止检查
-            #     # print('m21_result:010101019048',m21_result)
-            #     if m21_result == '010101019048':   # m21 on = 010101019048  m21 off = 010101005188
-            #         global computer_is_open
-            #         computer_is_open = True
-            #         self.runButton.setChecked(True)  #启动检测
-            #         self.run_or_continue()
-            #         break
-            #     else:
-            #         computer_is_open = False
-            #         # break  ###测试用 强制退出
-            # else:
-            #     modbus_flag = False
-            #     print('modbus shut off')
-            #     time.sleep(0.05)
-            #     shut_coil = modbus_rtu.writedata(self.ser, DO_ALL_OFF)  ###OUT1-4  OFF  全部继电器关闭  初始化
-            #     time.sleep(0.05)
-            #     modbus_rtu.writedata(self.ser, write_m20_off)
-            #     time.sleep(0.05)
-            #     modbus_rtu.writedata(self.ser, write_m21_off)
-            #     self.ser.close()
 
             while self.runButton_modbus.isChecked() and modbus_flag:
-                # while computer_is_open and modbus_flag:   # computer_is_open = PLC m21=1
-                # while modbus_flag:
-                # print('target marker')
                 start = time.time()
-                # writeD10 = self.calculate_crc([1, 6, 10, ngCounter])
-                # writeD10 = self.calculate_crc([1, 16, 10, 2, 4, ngCounter])  ## 批量寄存器写入 D10 + D11 (2表示写入2位）
-                # modbus_rtu.writedata(self.ser, writeD10)  # 向 PLC NG计数 D10 写入
-                # modbus_rtu.writedata(self.ser, writeD12)  # 向 PLC 检查次数 D11 写入 100
                 modbus_tcp.modbustcp_write_registers(10, 2, ngCounter)  # D10 写入数据 NG次数
                 modbus_tcp.modbustcp_write_registers(12, 2, loopCounter)  # 写入D12 检查次数
-
-                # stop = time.time()
-                #### 同步UI 信号  // output_box_list 更新 移动到  def show_statistic() 2025-1-9  by kwan
-                # intput_box_list = [self.checkBox_10.isChecked(), self.checkBox_11.isChecked(), self.checkBox_12.isChecked(), self.checkBox_13.isChecked()]
-                # output_box_list = [self.checkBox_2.isChecked()]
-                # output_box_list = [self.checkBox_2.isChecked(), self.checkBox_3.isChecked(),
-                #                    self.checkBox_4.isChecked(), self.checkBox_5.isChecked(),
-                #                    self.checkBox_6.isChecked()]
+                middle = time.time()
 
                 for i, n in enumerate(output_box_list):
                     if len(output_box_list) >= 1:
                         if i == 0:
-                            # modbus_rtu.writedata(self.ser, DO0_ON) if n else modbus_rtu.writedata(self.ser, DO0_OFF)
                             modbus_tcp.modbustcp_write_registers(20, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 20,
                                 1, 0)
-                            # modbus_tcp.modbustcp_write_coil()
-                            # time.sleep(0.1)
                         if i == 1:
-                            # modbus_rtu.writedata(self.ser, DO1_ON) if n else modbus_rtu.writedata(self.ser, DO1_OFF)
                             modbus_tcp.modbustcp_write_registers(22, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 22,
                                 1, 0)
-                            # time.sleep(0.1)
                         if i == 2:
-                            # modbus_rtu.writedata(self.ser, DO2_ON) if n else modbus_rtu.writedata(self.ser, DO2_OFF)
                             modbus_tcp.modbustcp_write_registers(24, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 24,
                                 1, 0)
                         if i == 3:
-                            # modbus_rtu.writedata(self.ser, DO3_ON) if n else modbus_rtu.writedata(self.ser, DO3_OFF)
                             modbus_tcp.modbustcp_write_registers(26, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 26,
                                 1, 0)
-                            # time.sleep(0.1)
                         if i == 4:
-                            # modbus_rtu.writedata(self.ser, DO4_ON) if n else modbus_rtu.writedata(self.ser, DO4_OFF)
                             modbus_tcp.modbustcp_write_registers(28, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 28,
                                 1, 0)
                         if i == 5:
-                            # modbus_rtu.writedata(self.ser, DO5_ON) if n else modbus_rtu.writedata(self.ser, DO5_OFF)
                             modbus_tcp.modbustcp_write_registers(30, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 30,
                                 1, 0)
                         if i == 6:
-                            # modbus_rtu.writedata(self.ser, DO6_ON) if n else modbus_rtu.writedata(self.ser, DO6_OFF)
                             modbus_tcp.modbustcp_write_registers(32, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 32,
                                 1, 0)
                         if i == 7:
-                            # modbus_rtu.writedata(self.ser, DO7_ON) if n else modbus_rtu.writedata(self.ser, DO7_OFF)
                             modbus_tcp.modbustcp_write_registers(34, 1,
                                                                  1) if n else modbus_tcp.modbustcp_write_registers(
                                 34,
                                 1, 0)
 
-                    # if n:  # output NG
-                    #     # print('scratch detected__________________________________________________')
-                    #     # global feedback_data_D3
-                    #     # feedback_data_D3 = modbus_rtu.writedata(self.ser, DO3_ON)   # PLC控制，红灯ON-240228
-                    #     # print("ng output", feedback_data_D3)
-                    #     # modbus_tcp.modbustcp_write_coil(8310, 1)  # M118 ON
-                    #     modbus_tcp.modbustcp_write_register(20, 1)  # D10 写入
-                    #     # time.sleep(0.2)
-                    #     # feedback_data = modbus_rtu.writedata(self.ser, DO2_OFF)  # PLC控制，灭绿灯-240228    #240505fix：新增继电器，取消绿灯输出
-                    # if not n and self.runButton.isChecked():
-                    #     # print('scratch has not detected')
-                    #     # modbus_tcp.modbustcp_write_coil(8310, 0)   # M118 OFF
-                    #     modbus_tcp.modbustcp_write_register(20, 0)  # D10 写入
-                    #     # time.sleep(0.2)
-                    #     # print(feedback_data)
-                    #     # feedback_data = modbus_rtu.writedata(self.ser, DO3_OFF)  # PLC控制，红灯OFF-240228
-                    #     # feedback_data = modbus_rtu.writedata(self.ser, DO2_ON)  # PLC控制，亮绿灯-240228     #240505fix：新增继电器，取消绿灯输出
-                    #     # time.sleep(0.02)
-                    #     # feedback_data = modbus_rtu.writedata(self.ser, DO2_OFF) # PLC控制，绿灯OFF-240228
-
                 stop = time.time()
-                # print(f'modbus_tcp {(stop - start) * 1000} ms')
                 freq = int(1 / (stop - start))
+                # print('modbus time_write_d', (middle - start))
+                # print('modbus time', (stop - start))
                 self.label_modbus.setText(str(freq))
-                # print(f'modbus freq: {freq}Hz,{(stop-start)*1000}ms')
             else:
                 modbus_flag = False
                 print('modbus shut off')
-                time.sleep(0.2)
-                # shut_coil = modbus_rtu.writedata(self.ser, DO3_OFF)
-                # shut_coil = modbus_rtu.writedata(self.ser, DO_ALL_OFF)  ###OUT1-4  OFF  全部继电器关闭  初始化
-                # time.sleep(0.2)
-                # modbus_rtu.writedata(self.ser, write_m20_off)
-                # time.sleep(0.2)
-                # modbus_rtu.writedata(self.ser, write_m21_off)
+                time.sleep(0.1)
                 try:
-                    self.ser.close()
+                    # self.ser.close()
                     self.client.close()
                 except Exception as e:
-                    print('ser.close error ', e)
+                    print('client.close error ', e)
 
-    def modbus_on_off(self):  # modbus rtu 控制开关 open port ↓
-        global modbus_flag
-        # if not modbus_flag:
-        if self.runButton_modbus.isChecked():
-            print('runButton_modbus.isChecked')
-            modbus_flag = True
-            print('set  modbus_flag = True')
-            try:
-                self.ser, self.ret, error = modbus_rtu.openport(self.port_type, 9600, 5)  # 打开端口
-            except Exception as e:
-                print('openport erro -1', e)
-                self.statistic_msg(str(e))
-
-            if not self.ret:
-                self.runButton_modbus.setChecked(False)
-                # self.runButton_modbus.setStyleSheet('background-color:rgb(220,0,0)') ### background = red
-                MessageBox(
-                    self.closeButton, title='Error', text='Connection Error: ' + str(error), time=2000,
-                    auto=True).exec_()
-                print('port did not open')
-                # try:
-                #     self.ser, self.ret, error = modbus_rtu.openport(self.port_type, 9600, 5)  # 打开端口
-                #     if self.ret:
-                #         _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
-                # except Exception as e:
-                #     print('openport erro-2', e)
-                #     self.statistic_msg(str(e))
-            else:  # self.ret is  True
-                self.runButton_modbus.setChecked(True)
-                _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
-                # self.runButton_modbus.setStyleSheet('background-color:rgb(0,0,0)')  ### background = red
-        else:  # shut down modbus
-            print('runButton_modbus.is unChecked')
-            modbus_flag = False
-            self.runButton_modbus.setChecked(False)
-            print('shut down modbus_flag = False')  ####  ###
+    # def modbus_on_off(self):  # modbus rtu 控制开关 open port ↓
+    #     global modbus_flag
+    #     # if not modbus_flag:
+    #     if self.runButton_modbus.isChecked():
+    #         print('runButton_modbus.isChecked')
+    #         modbus_flag = True
+    #         print('set  modbus_flag = True')
+    #         try:
+    #             self.ser, self.ret, error = modbus_rtu.openport(self.port_type, 9600, 5)  # 打开端口
+    #         except Exception as e:
+    #             print('openport erro -1', e)
+    #             self.statistic_msg(str(e))
+    #
+    #         if not self.ret:
+    #             self.runButton_modbus.setChecked(False)
+    #             MessageBox(
+    #                 self.closeButton, title='Error', text='Connection Error: ' + str(error), time=2000,
+    #                 auto=True).exec_()
+    #             print('port did not open')
+    #         else:  # self.ret is  True
+    #             self.runButton_modbus.setChecked(True)
+    #             _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
+    #     else:  # shut down modbus
+    #         print('runButton_modbus.is unChecked')
+    #         modbus_flag = False
+    #         self.runButton_modbus.setChecked(False)
+    #         print('shut down modbus_flag = False')  ####  ###
 
     def modbustcp_on_off(self):  # modbus_tcp 控制开关 open port ↓
         global modbus_flag , modbus_tcp_ip, modbus_tcp_port
-        # if not modbus_flag:
         if self.runButton_modbus.isChecked():
             modbus_flag = True
-            ret1 = None
-            client =None
             error = None
-            # print('modbustcp is on, flag is true')
             try:
-                client, ret1, error = modbus_tcp.modbustcp_open_port(modbus_tcp_ip, modbus_tcp_port)  # 打开端口
+                self.client, self.ret, error = modbus_tcp.modbustcp_open_port(modbus_tcp_ip, modbus_tcp_port)  # 打开端口
             except Exception as e:
                 print('tcp openport erro -1', e)
                 self.statistic_msg(str(e))
-            if not ret1:  # show the info if modbus_tcp  connection failed
                 self.runButton_modbus.setChecked(False)
-                # self.runButton_modbus.setStyleSheet('background-color:rgb(220,0,0)') ### background = red
                 MessageBox(
                     self.closeButton, title='Error', text='ModbusTCP Failed to connect !: ' + str(error), time=2000,
                     auto=True).exec_()
@@ -1011,7 +863,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 print('modbus_tcp connected successful')
                 self.runButton_modbus.setChecked(True)
                 _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
-                # self.runButton_modbus.setStyleSheet('background-color:rgb(0,0,0)')  ### background = red
         else:  # shut down modbus
             print('runButton_modbus.is unChecked')
             modbus_flag = False
@@ -1022,7 +873,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         if not self.det_thread.jump_out:
             self.det_thread.jump_out = True
 
-        # self.det_thread.join()  #### bug-1 加入此语句 停止线程会卡死  未解决
 
     def search_pt(self):
         pt_list = os.listdir('./pt')
@@ -1149,15 +999,12 @@ class MainWindow(QMainWindow, Ui_mainWindow):
     def statistic_msg(self, msg):
         self.statistic_label.setText(msg)
         print(msg)
-        # self.qtimer.start(3000)
 
     def show_msg(self, msg):
-        # self.runButton.setChecked(Qt.Unchecked)
         self.statistic_msg(msg)
 
         if msg == "Finished":
             print(' msg == Finished')
-            # self.CheckBox_autoSave.setEnabled(True)
 
     def change_model(self, x):
         self.model_type = self.comboBox_model.currentText()  # comboBox
@@ -1176,12 +1023,10 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
     def change_port(self, x):
         self.port_type = self.comboBox_port.currentText()
-        # self.det_thread.source = self.source_type
         self.statistic_msg('Change port to %s' % x)
 
     def open_file(self):
         config_file = 'config/fold.json'
-        # config = json.load(open(config_file, 'r', encoding='utf-8'))
         config = json.load(open(config_file, 'r', encoding='utf-8'))
         open_fold = config['open_fold']
         if not os.path.exists(open_fold):
@@ -1219,8 +1064,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.mouse_flag = False
 
     def setting_page_show(self):  # 菜单栏设定 genaral
-        # print("into setting")
-        # setting_page().show()
         self.trg_setting_ui = setting_page()
         self.trg_setting_ui.show()
 
@@ -1253,6 +1096,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
     def show_statistic(self, statistic_dic):  ### predicttion  output  resultWidget
         global results, okCounter, ngCounter, output_box_list
+        # print("statistic", statistic_dic)
         try:
             self.dateTimeEdit.setDateTime(QDateTime.currentDateTime())  # emit dateTime to UI
             self.resultWidget.clear()
@@ -1267,29 +1111,41 @@ class MainWindow(QMainWindow, Ui_mainWindow):
 
             for index, (key, value) in enumerate(statistic_dic.items()):
                 # print(f"Position: {index}, Key: {key}, Value: {value}")
+                global area_min, scratch_min, quantity_dic, scratch_qua
+                # print('scratch', quantity_dic['scratch'])
                 if index == 0:
-                    self.checkBox_2.setChecked(True) if value > 0 else self.checkBox_2.setChecked(False)
+                    self.checkBox_2.setChecked(True) if value > int(area_min) else self.checkBox_2.setChecked(False)
+                    if value > int(area_min):
+                        self.det_thread.save_folder = r'.\auto_save\jpg\pt_protrusion'
+                    else:
+                        self.det_thread.save_folder = None
+                    # self.det_thread.save_folder = r'.\auto_save\jpg\pt_protrusion' if value > int(area_min) else self.det_thread.save_folder = None
                     self.checkBox_2.setText(key)
                 if index == 1:
-                    self.checkBox_3.setChecked(True) if value > 0 else self.checkBox_3.setChecked(False)
+                    self.checkBox_3.setChecked(True) if int(quantity_dic['scratch']) > int(scratch_qua) else self.checkBox_3.setChecked(False)
+                    if int(quantity_dic['scratch']) > int(scratch_qua):
+                        self.det_thread.save_folder = r'.\auto_save\jpg\pt_protrusion'
+                    else:
+                        self.det_thread.save_folder = None
+                    # self.det_thread.save_folder = r'.\auto_save\jpg\pt_protrusion' if int(quantity_dic['scratch']) > int(scratch_qua) else self.det_thread.save_folder = None
                     self.checkBox_3.setText(key)
                 if index == 2:
-                    self.checkBox_4.setChecked(True) if value > 0 else self.checkBox_4.setChecked(False)
+                    self.checkBox_4.setChecked(True) if value > int(area_min) else self.checkBox_4.setChecked(False)
                     self.checkBox_4.setText(key)
                 if index == 3:
-                    self.checkBox_5.setChecked(True) if value > 0 else self.checkBox_5.setChecked(False)
+                    self.checkBox_5.setChecked(True) if value > int(area_min) else self.checkBox_5.setChecked(False)
                     self.checkBox_5.setText(key)
                 if index == 4:
-                    self.checkBox_6.setChecked(True) if value > 0 else self.checkBox_6.setChecked(False)
+                    self.checkBox_6.setChecked(True) if value > int(area_min) else self.checkBox_6.setChecked(False)
                     self.checkBox_6.setText(key)
                 if index == 5:
-                    self.checkBox_7.setChecked(True) if value > 0 else self.checkBox_7.setChecked(False)
+                    self.checkBox_7.setChecked(True) if value > int(area_min) else self.checkBox_7.setChecked(False)
                     self.checkBox_7.setText(key)
                 if index == 6:
-                    self.checkBox_8.setChecked(True) if value > 0 else self.checkBox_8.setChecked(False)
+                    self.checkBox_8.setChecked(True) if value > int(area_min) else self.checkBox_8.setChecked(False)
                     self.checkBox_8.setText(key)
                 if index == 7:
-                    self.checkBox_9.setChecked(True) if value > 0 else self.checkBox_9.setChecked(False)
+                    self.checkBox_9.setChecked(True) if value > int(area_min) else self.checkBox_9.setChecked(False)
                     self.checkBox_9.setText(key)
                 ###  更新全局变量 output_box_list
                 output_box_list = [self.checkBox_2.isChecked(), self.checkBox_3.isChecked(),
@@ -1299,7 +1155,6 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             if len(results):
                 # ngCounter += 1
                 self.label_ngCounter.setText(str(ngCounter))
-                # print(f'ngCounter: {ngCounter}')
                 self.pushButton_okng.setText(f"NG: {len(results)}")
                 self.pushButton_okng.setStyleSheet('''QPushButton{
                         font-size: 20px;
@@ -1451,7 +1306,7 @@ class setting_page(QMainWindow, Ui_setting):
         config = self.load_setting()
 
     def load_setting(self):  # sql config setting.json'
-        global sql_server_ip, config
+        global sql_server_ip, config, area_min, scratch_min, scratch_qua
         config_file = 'config/setting2.json'
         if not os.path.exists(config_file):  # 如果.json文件不存在则创建文件 ↓
             sensor_switch = 0
@@ -1472,8 +1327,8 @@ class setting_page(QMainWindow, Ui_setting):
                 f.write(new_json)
         else:
             config = json.load(open(config_file, 'r', encoding='utf-8'))
-            print('setting_page loading config:', config_file, config)
-            if len(config) < 6:  #  参数不足时  补充参数,否则无法启动
+            # print('setting_page loading config:', config_file, config)
+            if len(config) < 16:  #  参数不足时  补充参数,否则无法启动
                 print("len", len(config))
                 self.sensor_switch = 0
                 self.SQL_switch = 2
@@ -1481,6 +1336,12 @@ class setting_page(QMainWindow, Ui_setting):
                 self.database = 'PE_DataBase'
                 self.username = 'TRG-PE'
                 self.password = '705705'
+                area_min = '1000'
+                scratch_min = '2000'
+                self.area_max = '50000'
+                self.ngcounter_low = '1'
+                self.ngcounter_high = '5'
+                scratch_qua = '3'
             else:  # 更新UI参数 ↓
                 self.sensor_switch = config['sensor_switch']
                 self.sensor_port = config['sensor_port']
@@ -1489,6 +1350,12 @@ class setting_page(QMainWindow, Ui_setting):
                 self.database = config['database']
                 self.username = config['username']
                 self.password = config['password']
+                area_min = config['area_min']
+                scratch_min = config['scratch_min']
+                self.area_max = config['area_max']
+                self.ngcounter_low = config['ng_counter_low_limit']
+                self.ngcounter_high = config['ng_counter_higt_limit']
+                scratch_qua = config['scratch_qua']
 
         # 依据存储的json文件 更新 ui参数
         self.checkBox_sensor.setCheckState(config['sensor_switch'])
@@ -1503,9 +1370,20 @@ class setting_page(QMainWindow, Ui_setting):
         self.comboBox_rtu_port.setCurrentIndex(config['modbus_rtu_port'])
         self.lineEdit_tcp_server.setText(config['modbus_tcp_server'])
         self.lineEdit_tcp_port.setText(config['modbus_tcp_port'])
-
-
+        self.lineEdit_ngcounter_low.setText(config['ng_counter_low_limit'])
+        self.lineEdit_ngcounter_high.setText(config['ng_counter_higt_limit'])
+        self.lineEdit_area_max.setText(config['area_max'])
+        self.lineEdit_area_min.setText(config['area_min'])
+        self.lineEdit_scratch_min.setText(config['scratch_min'])
+        self.lineEdit_scratch_qua.setText(config['scratch_qua'])
         return config
+
+    def update_settings(self):
+        global area_min, scratch_min, scratch_qua
+        # update area_min
+        area_min = self.lineEdit_area_min.text()
+        scratch_min = self.lineEdit_scratch_min.text()
+        scratch_qua = self.lineEdit_scratch_qua.text()
 
     def save_settings(self):
         print("Execute save setting at setting page")
@@ -1518,11 +1396,16 @@ class setting_page(QMainWindow, Ui_setting):
         config['database'] = self.lineEdit_db.text()
         config['username'] = self.lineEdit_user.text()
         config['password'] = self.lineEdit_pw.text()
-
         config['plc_switch'] = self.checkBox_plc_enable.checkState()
         config['modbus_rtu_port'] = self.comboBox_rtu_port.currentIndex()
         config['modbus_tcp_server'] = self.lineEdit_tcp_server.text()
         config['modbus_tcp_port'] = self.lineEdit_tcp_port.text()
+        config['ng_counter_low_limit'] = self.lineEdit_ngcounter_low.text()
+        config['ng_counter_higt_limit'] = self.lineEdit_ngcounter_high.text()
+        config['area_max'] = self.lineEdit_area_max.text()
+        config['area_min'] = self.lineEdit_area_min.text()
+        config['scratch_min'] = self.lineEdit_scratch_min.text()
+        config['scratch_qua'] = self.lineEdit_scratch_qua.text()
 
         # 新增参数 请在此处添加↑ ， 运行UI后 点击 save按钮，保存为 json文件 地址= ./config/setting2.json
         try:
@@ -1548,7 +1431,7 @@ class setting_page(QMainWindow, Ui_setting):
     def closeEvent(self, event):
         print("Execute close event()")
         # 保存设置窗口参数
-        # self.save_settings()
+        self.update_settings()
         event.accept()
 
     def run_sql(self): # sql_connect_Button
@@ -1587,10 +1470,9 @@ class setting_page(QMainWindow, Ui_setting):
             ) ##
 
     def sensor_on_off(self): # SensorPort_connect_Button
+        # modbus_start_time = time.time()
         global ser2, ret2, sensor_is_open
         print('Execute sensor_on_off', self.checkBox_sensor.isChecked())
-        sensor_port1 = mainWin.comboBox_port.currentText()
-        print('parameters: port1', sensor_port1)
         sensor_port2 = self.comboBox_sensor_port.currentText()
         print('parameters: sensor_port2',sensor_port2)
         if self.checkBox_sensor.isChecked():
@@ -1633,6 +1515,8 @@ class setting_page(QMainWindow, Ui_setting):
                 f'Failed to open sensor port',  # message
                 QMessageBox.Ok
             )
+        # modbus_end_time = time.time()
+        # print('time', modbus_end_time-modbus_start_time)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
@@ -1653,14 +1537,5 @@ if __name__ == "__main__":
     modbus_tcp_port = config['modbus_tcp_port']
 
     mainWin.runButton_modbus.setChecked(True)
-    # mainWin.modbus_on_off()  # start modbus rtu
     mainWin.modbustcp_on_off()  # start modbus tcp
-
-    # time.sleep(1)
-    # print('thread_mudbus_run start')
-    # _thread.start_new_thread(myWin.thread_mudbus_run, ())  #### 启动检测 信号 循环
-    # 单独输出 调试模式 ↓
-    # det_thread.send_img_ch0.connect(lambda x: cvshow_image(x))
-
-    # myWin.showMaximized()
     sys.exit(app.exec_())

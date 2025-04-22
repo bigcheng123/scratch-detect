@@ -1,13 +1,19 @@
 {
-  "sensor_switch": 0,
-  "sensor_port": 5,
+  "sensor_switch": 2,
+  "sensor_port": 9,
   "SQL_switch": 0,
   "server": "172.18.136.183",
   "database": "PE_DataBase",
   "username": "TRG-PE",
   "password": "705705",
   "plc_switch": 2,
-  "modbus_rtu_port": 8,
-  "modbus_tcp_server": "127.0.0.1",
-  "modbus_tcp_port": "502"
+  "modbus_rtu_port": 9,
+  "modbus_tcp_server": "192.168.3.110",
+  "modbus_tcp_port": "502",
+  "ng_counter_low_limit": "1",
+  "ng_counter_higt_limit": "5",
+  "area_max": "500000",
+  "area_min": "80000",
+  "scratch_min": "6000",
+  "scratch_qua": "2"
 }
