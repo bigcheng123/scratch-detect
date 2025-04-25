@@ -1,4 +1,169 @@
-  File "main.py", line 1117
-    self.det_thread.save_folder = r'.\auto_save\jpg\pt_protrusion' if value > int(area_min) else self.det_thread.save_folder = None
-                                  ^
-SyntaxError: cannot assign to conditional expression
+QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
+QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
+QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
+QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
+QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
+ run load_parameters() at mainwindows
+loading completed... config/setting.json {'iou': 0.77, 'conf': 0.87, 'rate': 11, 'latency': 0, 'auto_save': 0, 'device': 0, 'port': 9, 'source': 0, 'model': 5, 'add_box': 0}
+Change port to COM9
+Change model to protrusion-250421.pt
+setting page config: {'sensor_switch': 2, 'sensor_port': 9, 'SQL_switch': 0, 'server': '172.18.136.183', 'database': 'PE_DataBase', 'username': 'TRG-PE', 'password': '705705', 'plc_switch': 2, 'modbus_rtu_port': 9, 'modbus_tcp_server': '192.168.3.110', 'modbus_tcp_port': '502', 'ng_counter_low_limit': '1', 'ng_counter_higt_limit': '5', 'area_max': '500000', 'area_min': '80000', 'scratch_min': '6000', 'scratch_qua': '2'}
+sensor_switch on 2
+Execute sensor_on_off True
+parameters: sensor_port2 COM9
+Try to connect sensor_port2
+sensor connect successfully
+modbus_tcp connected successful
+<class 'str'> COM9
+thread_mudbus_run modbus_flag = True
+sensor start
+Detecting >> model£ºprotrusion-250421.pt£¬device: 0, source£ºstreams.txt
+self.det_thread.is_continue True
+YOLOv5  f38b3b2 torch 1.8.1+cu111 CUDA:0 (NVIDIA GeForce RTX 4060 Ti, 16380MiB)
+
+Fusing layers... 
+Model Summary: 213 layers, 7023610 parameters, 0 gradients, 15.8 GFLOPs
+1/5: 0...  Success (inf frames 1x1 at 30.00 FPS)
+open cam 0 succesfully
+2/5: 1...  Success (inf frames 1x1 at 30.00 FPS)
+open cam 1 succesfully
+3/5: 2...  Success (inf frames 1x1 at 30.00 FPS)
+open cam 2 succesfully
+4/5: 3...  Success (inf frames 1x1 at 30.00 FPS)
+open cam 3 succesfully
+5/5: 4...  Success (inf frames 1x1 at 30.00 FPS)
+open cam 4 succesfully
+
+streams: ['0', '1', '2', '3', '4']
+Run while loop
+ while loop self.is_continue True
+ while loop self.jump_out False
+self.current_weight != self.weights
+Fusing layers... 
+Model Summary: 213 layers, 7023610 parameters, 0 gradients, 15.8 GFLOPs
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_14_Cam4_0.89_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_14_Cam4_0.9_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_14_Cam4_0.9_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_14_Cam4_0.89_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.89_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.91_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.91_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.92_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.92_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.9_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.9_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.91_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.89_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.92_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.93_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.88_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.88_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.9_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_15_Cam4_0.88_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_16_Cam4_0.87_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_16_Cam4_0.88_.jpg
+CheckBox_autoSave False
+save as .jpg im4 , CAM = 4,save_path=.\auto_save\jpg\pt_protrusion\scratch_2025_04_24_19_36_16_Cam4_0.88_.jpg
+CheckBox_autoSave False
+sensor stop
+reset output
+Ð´ÈëÊ§°Ü£ºModbus Error: [Input/Output] [WinError 10054] Ô¶³ÌÖ÷»úÇ¿ÆÈ¹Ø±ÕÁËÒ»¸öÏÖÓÐµÄÁ¬½Ó¡£
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+execute : closeEvent of main window
+jump_out push-2 True
+content config_json: {
+  "iou": 0.77,
+  "conf": 0.87,
+  "rate": 11,
+  "latency": 0,
+  "auto_save": 0,
+  "device": 0,
+  "port": 9,
+  "source": 0,
+  "model": 5,
+  "add_box": 0
+}
+confi_json write
+1/5: 0...  Success (inf frames 1x1 at 30.00 FPS)
+open cam 0 succesfully
+WARNING: Video stream unresponsive, please check your 0 camera connection.
+Connection to (192.168.3.110, 502) failed: timed out
+Ð´¼Ä´æÆ÷·¢Éú´íÎó£ºModbus Error: [Connection] Failed to connect[ModbusTcpClient 192.168.3.110:502]
+modbus shut off
+2/5: 1...  Success (inf frames 1x1 at 30.00 FPS)
+open cam 1 succesfully

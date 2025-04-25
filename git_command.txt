@@ -137,8 +137,8 @@ bash
 复制
 git add <file>
 git commit
-修改最后一次提交
 
+修改最后一次提交
 bash
 复制
 git commit --amend            # 修改提交信息或内容
