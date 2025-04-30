@@ -170,3 +170,5 @@ log/*
 /multitest.py
 /plc/gxw/backup/
 /log/
+/auto_save/txt/2025-04-25.txt
+/auto_save/txt/

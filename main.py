@@ -91,9 +91,7 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
         self.rate = 100
         self.save_folder = None  ####'./auto_save/jpg'
         self.pred_flag = False  # pred_CheckBox
-
-
-
+        self.setting = setting_page()
 
     def safe_write_to_txt(slef,txt_path, content_list):
         """
@@ -102,10 +100,10 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
             txt_path (str): 目标文件路径（如 ./auto_save/txt/2024-03-15.txt）
             content_list (list): 要写入的内容列表（按顺序直接写入）
         """
-        # 确保目录存在
+        # 确保目录存在 如果不存在则创建该目录
         os.makedirs(os.path.dirname(txt_path), exist_ok=True)
 
-        # 加锁写入文件
+        # 加锁写入文件 防止同时向一个文件写入内容时 发生冲突
         try:
             with open(txt_path, 'a') as f:
                 portalocker.lock(f, portalocker.LOCK_EX)  # 加锁
@@ -258,7 +256,7 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                     else:
                         percent = self.percent_length
 
-                    # # todo  建立 pred 预测开关， 2种图像输出方式 ， 原始输出  VS  预测结果后输出，控制变量 = self.pred_flag
+                    ## todo  建立 pred 预测开关， 2种图像输出方式 ， 原始输出  VS  预测结果后输出，控制变量 = self.pred_flag
                     if not self.pred_flag and self.is_continue:  # if not pred_frag  output raw frame
                         for i, index in enumerate(streams_list):
                             t2 = time_sync()
@@ -378,8 +376,8 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                                         txt_path = os.path.join(txt_dir, date_str + '.txt')
                                         content_list = [current_time, cls.item(), conf.item()]
                                         line = (current_time, cls, conf) if save_conf else (current_time,cls, *xywh)  # label format
-                                        print('line type',type(line))
-                                        print(txt_path)
+                                        # print('line type',type(line))
+                                        # print(txt_path)
                                         print(content_list)
                                         self.safe_write_to_txt(txt_path,content_list)
 
@@ -437,11 +435,24 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                                                 # cv2.imwrite(save_path, imc)  # imc = no box
                                                 im = imc if not add_box else im0
                                                 cv2.imwrite(save_path, im)  # save image
-                                                # print('plot_box_CheckBox', myWin.plot_box_CheckBox.isChecked())
                                                 print(
                                                     str(f'save as .jpg im{i} , CAM = {label_chanel},save_path={save_path}'))  # & str(save_path))
                                                 print('CheckBox_autoSave', mainWin.CheckBox_autoSave.isChecked())
 
+                                    if area_dic['block'] > int(self.setting.lineEdit_area_min.text()) or quantity_dic['scratch'] > int(self.setting.lineEdit_scratch_qua.text()):
+                                    # if area_dic['block'] > 60000 or quantity_dic['scratch'] > 2:
+                                    # if self.save_pic:
+                                        os.makedirs(r'.\auto_save\jpg\trace', exist_ok=True)
+                                        if len(det):
+                                            save_path = os.path.join(r'.\auto_save\jpg\trace',
+                                                                         f'{det_name}_' + time.strftime(
+                                                                             '%Y_%m_%d_%H_%M_%S',
+                                                                             time.localtime()) + f'_Cam{label_chanel}_' + f'{det_confidence}_' + '.jpg')
+                                            add_box = mainWin.plot_box_CheckBox.isChecked()
+                                            im = imc if not add_box else im0
+                                            cv2.imwrite(save_path, im)  # save image
+                                            print(
+                                                    str(f'save as .jpg im{i} , CAM = {label_chanel},save_path={save_path}'))  # & str(save_path))
                                 # print('detection is running')
 
                                 # if 'sql_is_open' is true, write data to SQL
@@ -1156,19 +1167,21 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 # print('scratch', quantity_dic['scratch'])
                 if index == 0:
                     self.checkBox_2.setChecked(True) if value > int(area_min) else self.checkBox_2.setChecked(False)
-                    if value > int(area_min):
-                        self.det_thread.save_folder = r'.\auto_save\jpg\trace'
-                    else:
-                        self.det_thread.save_folder = None
-                    # self.det_thread.save_folder = r'.\auto_save\jpg\pt_protrusion' if value > int(area_min) else self.det_thread.save_folder = None
+                    # if value > int(area_min):
+                        # self.det_thread.save_folder = r'.\auto_save\jpg\trace' # note on 250429
+                        # self.det_thread.save_pic = r'.\auto_save\jpg\trace'
+                    # else:
+                        # self.det_thread.save_folder = None # note on 250429
+                        # self.det_thread.save_pic = None
                     self.checkBox_2.setText(key)
                 if index == 1:
                     self.checkBox_3.setChecked(True) if int(quantity_dic['scratch']) > int(scratch_qua) else self.checkBox_3.setChecked(False)
-                    if int(quantity_dic['scratch']) > int(scratch_qua):
-                        self.det_thread.save_folder = r'.\auto_save\jpg\trace'
-                    else:
-                        self.det_thread.save_folder = None
-                    # self.det_thread.save_folder = r'.\auto_save\jpg\pt_protrusion' if int(quantity_dic['scratch']) > int(scratch_qua) else self.det_thread.save_folder = None
+                    # if int(quantity_dic['scratch']) > int(scratch_qua):
+                        # self.det_thread.save_folder = r'.\auto_save\jpg\trace' # note on 250429
+                        # self.det_thread.save_pic = r'.\auto_save\jpg\trace'
+                    # else:
+                        # self.det_thread.save_folder = None # note on 250429
+                        # self.det_thread.save_pic = None
                     self.checkBox_3.setText(key)
                 if index == 2:
                     self.checkBox_4.setChecked(True) if value > int(area_min) else self.checkBox_4.setChecked(False)

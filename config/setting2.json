@@ -13,7 +13,7 @@
   "ng_counter_low_limit": "1",
   "ng_counter_higt_limit": "5",
   "area_max": "500000",
-  "area_min": "80000",
+  "area_min": "60000",
   "scratch_min": "6000",
   "scratch_qua": "2"
 }
