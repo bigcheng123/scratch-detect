@@ -3,4 +3,34 @@ QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
 QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
 QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
 QFont::setPointSize: Point size <= 0 (-1), must be greater than 0
-QObject::~QObject: Timers cannot be stopped from another thread
+ run load_parameters() at mainwindows
+loading completed... config/setting.json {'iou': 0.77, 'conf': 0.82, 'rate': 11, 'latency': 0, 'auto_save': 0, 'device': 0, 'port': 9, 'source': 0, 'model': 5, 'add_box': 0}
+Change port to COM9
+Change model to protrusion-250421.pt
+setting page config: {'sensor_switch': 2, 'sensor_port': 9, 'SQL_switch': 0, 'server': '172.18.136.183', 'database': 'PE_DataBase', 'username': 'TRG-PE', 'password': '705705', 'plc_switch': 2, 'modbus_rtu_port': 9, 'modbus_tcp_server': '192.168.3.110', 'modbus_tcp_port': '502', 'ng_counter_low_limit': '1', 'ng_counter_higt_limit': '5', 'area_max': '500000', 'area_min': '60000', 'scratch_min': '6000', 'scratch_qua': '2'}
+sensor_switch on 2
+Execute sensor_on_off True
+parameters: sensor_port2 COM9
+Try to connect sensor_port2
+sensor connect successfully
+sensor start
+Detecting >> model£ºprotrusion-250421.pt£¬device: 0, source£ºstreams.txt
+self.det_thread.is_continue True
+YOLOv5  93598d0 torch 1.8.1+cu111 CUDA:0 (NVIDIA GeForce RTX 4060 Ti, 16380MiB)
+
+execute : closeEvent of main window
+content config_json: {
+  "iou": 0.77,
+  "conf": 0.82,
+  "rate": 11,
+  "latency": 0,
+  "auto_save": 0,
+  "device": 0,
+  "port": 9,
+  "source": 0,
+  "model": 5,
+  "add_box": 0
+}
+confi_json write
+Fusing layers... 
+Model Summary: 213 layers, 7023610 parameters, 0 gradients, 15.8 GFLOPs

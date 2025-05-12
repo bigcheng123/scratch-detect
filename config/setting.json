@@ -1,9 +1,9 @@
 {
-  "iou": 0.77,
+  "iou": 0.8,
   "conf": 0.82,
-  "rate": 11,
-  "latency": 0,
-  "auto_save": 0,
+  "rate": 1,
+  "latency": 2,
+  "auto_save": 2,
   "device": 0,
   "port": 9,
   "source": 0,

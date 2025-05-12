@@ -35,7 +35,8 @@ from sql_folder.SQL_write import writesql, closesql
 
 # ↓ set global variable 设置全局变量  ↓
 results = None
-modbus_flag = Falseresults = []
+modbus_flag = False
+results = []
 okCounter = 0
 ngCounter = 0
 loopCounter = 0
@@ -55,10 +56,12 @@ sensor_is_open = False
 modbus_tcp_ip = "192.168.3.110"  # Modbus 服务器 IP ,可使用 sokit等串口调试工具建立一个 TCP服务器 地址
 modbus_tcp_port = 502  # 默认 Modbus TCP 端口
 sql_server_ip = '172.18.136.183'  # 不在一个域内的账户 只能使用IP 连接SQL服务器 , 不可使用计算机名称, SUMITOMORIKO/***
-area_dic = {}
-area_min = None
-scratch_min = None
-scratch_qua = None
+# area_dic = {}
+# confidence_dic = {}
+count = 0
+area_min = 0
+scratch_min = 0
+scratch_qua = 0
 
 # ↓ Class detector  检测类 created by yoloV5
 class DetThread(QThread):  # 检测功能主线程  继承 QThread
@@ -92,6 +95,13 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
         self.save_folder = None  ####'./auto_save/jpg'
         self.pred_flag = False  # pred_CheckBox
         self.setting = setting_page()
+        # 初始化检测结果字典
+        self.quantity_dic = {'block': 0, 'scratch': 0, 'edge': 0, 'fibre': 0, 'spot': 0}
+        self.area_dic = {'block': 0, 'scratch': 0, 'edge': 0, 'fibre': 0, 'spot': 0}
+        self.confidence_dic = {'block': 0, 'scratch': 0, 'edge': 0, 'fibre': 0, 'spot': 0}
+        # 添加图像存储变量
+        self.im0 = None  # 带框图像
+        self.imc = None  # 原始图像
 
     def safe_write_to_txt(slef,txt_path, content_list):
         """
@@ -199,35 +209,54 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
 
         # dataset = iter(dataset)  ##迭代器 iter 创建了一个迭代器对象，每次调用这个迭代器对象的__next__()方法时，都会调用 object
 
-        while loop_flag:  ##### 采用循环来 检查是否 停止推理
-            print('Run while loop')
-            print(' while loop self.is_continue', self.is_continue)
-            print(' while loop self.jump_out', self.jump_out)
 
-            # change model & device  20230810
-            if self.current_weight != self.weights:
-                print('self.current_weight != self.weights')
-                # Load model
-                model = attempt_load(self.weights, map_location=device)  # load FP32 model
-                stride = int(model.stride.max())  # model stride
-                imgsz = check_img_size(imgsz, s=stride)  # check image size
-                names = model.module.names if hasattr(model, 'module') else model.names  # get class names
-                if half:
-                    model.half()  # to FP16将模型的权重参数和激活值的数据类型转换为半精度浮点数格式。
-                    ### 这种转换可以减少模型的内存占用和计算开销，从而提高模型在 GPU 上的运行效率
-                # Run inference
-                if device.type == 'cpu':  # 'cpu' or GPU '0' '1''2'
-                    model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
-                self.current_weight = self.weights
 
-            # load  streams
-            # _pred_flag = True
+        while loop_flag:
+            if not self.is_continue:
+                time.sleep(0.1)  # 避免CPU空转
+                continue
 
-            if self.is_continue:
-                global results, ngCounter, okCounter, loopCounter, emit_frame_flag, quantity_dic
-                det_flag = None
-                #  loadstreams // dataset = LoadStreams(self.source, img_size=imgsz, stride=stride)
-                for path, img, im0s, self.vid_cap in dataset:  # 由于dataset在RUN中运行 会不断更新，所以此FOR循环 不会穷尽
+            try:
+                for path, img, im0s, self.vid_cap in dataset:
+                    # 250512注释下方2行
+                    # if not self.is_continue or self.jump_out:
+                    #     break
+                    white_image = np.ones((1160, 2600, 3),dtype=np.uint8)*255
+                    white_image = np.ones((1160, 2600), dtype=np.uint8) * 255
+                    im1 = im0s[1].copy()
+                    im1_gray = cv2.cvtColor(im1, cv2.COLOR_BGR2GRAY)
+                    # white_gray = cv2.cvtColor(white_image, cv2.COLOR_BGR2GRAY)
+                    diff = cv2.absdiff(white_image, im1_gray)
+                    diff_sum = np.sum(diff)
+                    print('diff_sum', diff_sum)
+                    if diff_sum>13000:
+                        if not mainWin.runButton.isChecked():
+                            mainWin.runButton.setChecked(True)
+                            mainWin.runButton.setText('PAUSE')
+                            mainWin.det_thread.is_continue = True
+                            if not mainWin.det_thread.isRunning():
+                                mainWin.run_or_continue()
+                    else:
+                        if mainWin.runButton.isChecked():
+                            # reset output
+                            global output_box_list
+                            mainWin.checkBox_2.setChecked(False)
+                            mainWin.checkBox_3.setChecked(False)
+                            mainWin.checkBox_4.setChecked(False)
+                            mainWin.checkBox_5.setChecked(False)
+                            mainWin.checkBox_6.setChecked(False)
+                            mainWin.checkBox_7.setChecked(False)
+                            mainWin.checkBox_8.setChecked(False)
+                            mainWin.checkBox_9.setChecked(False)
+                            output_box_list = [0, 0]
+                            time.sleep(0.1)  # wait the checkbox set false
+                            mainWin.det_thread.is_continue = False
+                            mainWin.runButton.setChecked(False)
+                            mainWin.runButton.setText('RUN')
+
+
+
+
                     t1 = time_sync()
                     # print(path)
                     # print(len(path), type(img), len(im0s), type(self.vid_cap))
@@ -242,11 +271,19 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                     if img.ndimension() == 3:
                         img = img.unsqueeze(0)
                     # 初始化 判断条件 建立对应字典 {key:value}
-                    quantity_dic = {name: 0 for name in names}  # create diction
-                    confidence_dic = {name: 0 for name in names}
-                    area_dic = {name: 0 for name in names}
+                    self.quantity_dic = {name: 0 for name in names}  # create diction
+                    self.area_dic = {name: 0 for name in names}
+                    self.confidence_dic = {name: 0 for name in names}
+                    # 确保所有需要的键都存在
+                    for key in ['block', 'scratch', 'edge', 'fibre', 'spot']:
+                        if key not in self.quantity_dic:
+                            self.quantity_dic[key] = 0
+                        if key not in self.area_dic:
+                            self.area_dic[key] = 0
+                        if key not in self.confidence_dic:
+                            self.confidence_dic[key] = 0
                     count += 1  # ### FSP counter
-                    if count % 30 == 0 and count >= 30:  # 大循环Loop 执行10的倍数次时，更新FSP
+                    if count % 30 == 0 and count >= 30:  # 大循环Loop 执行30的倍数次时，更新FSP
                         loopcycle = int(30 / (time.time() - start_time))  # 大 循环周期
                         self.send_fps.emit('fsp:' + str(loopcycle))
                         start_time = time.time()  # update start-time
@@ -316,21 +353,17 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                             print(f'type pred:', type(pred), len(pred))
 
                         # emit frame  & Process detections
+                        global  loopCounter
                         for i, det in enumerate(pred):  # pred = []
                             # print(f'i: {i}')
                             if i == len(pred) - 1:  # the last one
                                 loopCounter += 1
                                 # print(f'main loop: {loopCounter} ')
-                                if det_flag:
-                                    ngCounter += 1
-                                    det_flag = False  # Reset det_flag
-                                else:
-                                    det_flag = False  # Reset det_flag
                             # #label_index 方法1  ↓ ###label_chanel 依据 list det的 元素
                             # #label_chanel = str(i)
                             # ##label_index 方法2  ↓  依据 streams.txt camera号码
                             if len(pred) <= len(streams_list):
-                                label_chanel = str(streams_list[i])
+                                label_chanel = str(i)
                                 # print(f'len(pred) : {len(pred)} ')
 
                             else:
@@ -349,12 +382,11 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                             s += '%gx%g ' % img.shape[2:]  # print string
                             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
                             imc = im0.copy()  # if save_crop else im0  # for save NG frame
+                            
+                            # 更新当前帧的图像
+                            self.im0 = im0
+                            self.imc = imc
                             if len(det):  # if trigger    detection per image
-                                # #counter of ng judgement
-                                det_flag = True
-                                # if det_flag and i == len(pred) - 1:
-                                #     ngCounter += 1
-                                #     det_flag = False
                                 # Rescale boxes from img_size to im0 size
                                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
                                 # Print results
@@ -363,7 +395,7 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
                                 # function: save_txt / plot one box /save image
                                 for *xyxy, conf, cls in reversed(det):
-                                    if save_txt:  # save_txt=False,  # save results to *.txt
+                                    if save_txt:  # save_txt = true, save results to *.txt
                                         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(
                                             -1).tolist()  # normalized xywh
                                         # 获取当前日期作为文件名（格式：YYYY-MM-DD.txt）
@@ -378,13 +410,8 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                                         line = (current_time, cls, conf) if save_conf else (current_time,cls, *xywh)  # label format
                                         # print('line type',type(line))
                                         # print(txt_path)
-                                        print(content_list)
+                                        # print(content_list)
                                         self.safe_write_to_txt(txt_path,content_list)
-
-                                        # with open(txt_path, 'a') as f:
-                                        #     f.write(('%g ' * len(line)).rstrip() % line + '\n')
-                                        # #     # print(txt_path + '.txt')
-
 
 
                                     # plot_one_box here
@@ -396,8 +423,8 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                                     # view_img =check_inshow() # Check if environment supports image displays
                                     # print(f'Line 317 save_img {save_img},save_crop {save_crop},view_img {view_img}')
                                     c = int(cls)  # index of class
-                                    quantity_dic[names[c]] += 1  # 统计匹配目标的个数
-                                    # print('quantity_dic-2',quantity_dic) # 输出示例 statisstic_dic-2 {'block': 0, 'scratch': 0, 'edge': 0, 'fibre': 0, 'spot': 3}
+                                    self.quantity_dic[names[c]] += 1  # 统计匹配目标的个数
+                                    # print('quantity_dic',quantity_dic) # 输出示例 statisstic_dic-2 {'block': 0, 'scratch': 0, 'edge': 0, 'fibre': 0, 'spot': 3}
                                     label = None if hide_labels else (
                                         names[c] if hide_conf else f'{names[c]} {conf:.2f}')
                                     # print(f'label: {label}', type(label)) # 输出示例 label: spot 0.97 <class 'str'>
@@ -406,20 +433,19 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                                     # 分别取出类别和置信度，并赋值给新变量
                                     det_name = parts[0]
                                     det_confidence = float(parts[1])  # 将置信度转换为浮点数
-                                    confidence_dic[det_name] = det_confidence  # 更新字典中的对应键值 置信度
+                                    self.confidence_dic[det_name] = det_confidence  # 更新字典中的对应键值 置信度
                                     values = [float(tensor.item()) for tensor in xyxy]  # 提取数值并添加到新的列表中
                                     w = int(values[2] - values[0])
                                     h = int(values[3] - values[1])
-                                    area_dic[det_name] = w * h  # 更新字典中的对应键值 像素面积
+                                    self.area_dic[det_name] = w * h  # 更新字典中的对应键值 像素面积
                                     # print('wh:', w, h)
                                     # print('area_dic', area_dic)
-
                                     plot_one_box(xyxy, im0, label=label, color=colors(c, True),
                                                  line_thickness=line_thickness)
 
                                     # save NG image  here ↓
                                     # function auto_save  Write results  save NG image in floder jpg
-
+                                    ''' 关闭原来的图片保存规则 mainwin.CheckBox_autoSave.isChecked() →  self.save_folder = path = true
                                     if self.save_folder:  #### when checkbox: autosave is  setcheck, self.save_folder = true
                                         os.makedirs(self.save_folder, exist_ok=True)
                                         if len(det):
@@ -438,22 +464,39 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                                                 print(
                                                     str(f'save as .jpg im{i} , CAM = {label_chanel},save_path={save_path}'))  # & str(save_path))
                                                 print('CheckBox_autoSave', mainWin.CheckBox_autoSave.isChecked())
+                                    '''
+                                    # 为了修改最终结果的输出逻辑时，同步【信号输出】 与 【画像保存】，将信号控制 与 画像保存 放到 class MainWindows (其中需要用到的变量，以调用DetThread 类属性的形式）
+                                    # if mainWin.CheckBox_autoSave.isChecked(): # save image flag set true
+                                    #     if self.quantity_dic['block'] == int(self.setting.lineEdit_area_min.text()) :
+                                            # os.makedirs(r'.\auto_save\jpg\trace', exist_ok=True)
+                                            # if len(det):
+                                            #     save_path = os.path.join(r'.\auto_save\jpg\trace',
+                                            #                                  f'{det_name}_' + time.strftime(
+                                            #                                      '%Y_%m_%d_%H_%M_%S',
+                                            #                                      time.localtime()) + f'_Cam{label_chanel}_' + f'{det_confidence}_' + '.jpg')
+                                            #     add_box = mainWin.plot_box_CheckBox.isChecked()
+                                            #     im = imc if not add_box else im0
+                                            #     cv2.imwrite(save_path, im)  # save image
+                                            #     print(
+                                            #             str(f'area, CAM = {label_chanel},save_path={save_path}'))  # & str(save_path))
 
-                                    if area_dic['block'] > int(self.setting.lineEdit_area_min.text()) or quantity_dic['scratch'] > int(self.setting.lineEdit_scratch_qua.text()):
-                                    # if area_dic['block'] > 60000 or quantity_dic['scratch'] > 2:
-                                    # if self.save_pic:
-                                        os.makedirs(r'.\auto_save\jpg\trace', exist_ok=True)
-                                        if len(det):
-                                            save_path = os.path.join(r'.\auto_save\jpg\trace',
-                                                                         f'{det_name}_' + time.strftime(
-                                                                             '%Y_%m_%d_%H_%M_%S',
-                                                                             time.localtime()) + f'_Cam{label_chanel}_' + f'{det_confidence}_' + '.jpg')
-                                            add_box = mainWin.plot_box_CheckBox.isChecked()
-                                            im = imc if not add_box else im0
-                                            cv2.imwrite(save_path, im)  # save image
-                                            print(
-                                                    str(f'save as .jpg im{i} , CAM = {label_chanel},save_path={save_path}'))  # & str(save_path))
-                                # print('detection is running')
+                                        # if self.quantity_dic['scratch'] >= int(self.setting.lineEdit_scratch_qua.text()):
+                                        #     print('quantity_dic at detThread:', self.quantity_dic)
+                                            # os.makedirs(r'.\auto_save\jpg\trace', exist_ok=True)
+                                            # if len(det):
+                                            #     save_path = os.path.join(r'.\auto_save\jpg\trace',
+                                            #                                  f'{det_name}_' + time.strftime(
+                                            #                                      '%Y_%m_%d_%H_%M_%S',
+                                            #                                      time.localtime()) + f'_Cam{label_chanel}_' + f'{det_confidence}_' + '.jpg')
+                                            #     add_box = mainWin.plot_box_CheckBox.isChecked()
+                                            #     im = imc if not add_box else im0
+                                            #     cv2.imwrite(save_path, im)  # save image
+                                            #     print(
+                                            #             str(f' scratch, CAM = {label_chanel},save_path={save_path}'))  # & str(save_path))
+
+
+
+
 
                                 # if 'sql_is_open' is true, write data to SQL
                                 if SQL_is_open:
@@ -503,27 +546,9 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                             # ##send the detected result
                             # self.send_statistic.emit(quantity_dic)  #发送 检测结果 quantity_dic name:数量
                             # self.send_statistic.emit(confidence_dic)  # 发送 检测结果 confidence_dic  name：置信度
-                            self.send_statistic.emit(area_dic)  # 发送 检测结果 confidence_dic  name：置信度
+                            self.send_statistic.emit(self.area_dic)  # 发送 检测结果 confidence_dic  name：置信度
                     # #end line  if pred_flag __________________________________________________________
-                    '''
-                    if self.save_folder:  #### when checkbox: autosave is  setcheck
-                        # save as mp4
-                        if self.vid_cap is None:  ####save as .mp4
-                            # else: ### self.vid_cap is cv2capture save as .mp4
-                            if count == 1:
-                                ori_fps = int(self.vid_cap.get(cv2.CAP_PROP_FPS))
-                                if ori_fps == 0:
-                                    ori_fps = 25
-                                # width = int(self.vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                                # height = int(self.vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                                width, height = im0.shape[1], im0.shape[0]
-                                save_path = os.path.join(self.save_folder, time.strftime('%Y_%m_%d_%H_%M_%S',
-                                                                                       time.localtime()) + '.mp4')
-                                self.out = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*"mp4v"), ori_fps,
-                                                           (width, height))
-                            self.out.write(im0)
-                            print(str(f'save as .mp4  CAM = {label_chanel}'))  # & str(save_path))
-                    '''
+
                     if self.rate_check:
                         time.sleep(1 / self.rate)  # self.det_thread.rate =  self.rateSpinBox.setValue(x)  * 10
 
@@ -549,18 +574,17 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
                         #     self.out.release()
                         #     print('self.out.release')
 
-                self.is_continue = False  # exit inner loop
-                print('self.is_continue set False')
-                # 暂停时 重置输出 IO  将字典 area_dic 每个元素的值 都设置为0
-                for key in area_dic:
-                    area_dic[key] = 0
-                self.send_statistic.emit(area_dic)
-                print('reset output area_dic = 0')
-            else:
-                print('is_continue break', self.is_continue)
+            except Exception as e:
+                self.send_msg.emit(f'Error: {str(e)}')
+                break
 
-            if not self.vid_cap.isOpened():
-                loop_flag = False  # exit main loop  # todo bug 此处退出会卡死
+        self.is_continue = False  # exit inner loop
+        print('self.is_continue set False')
+        # 暂停时 重置输出 IO  将字典 area_dic 每个元素的值 都设置为0
+        for key in self.area_dic:
+            self.area_dic[key] = 0
+        self.send_statistic.emit(self.area_dic)
+        print('reset output area_dic = 0')
 
         if update:
             strip_optimizer(self.weights)  # update model (to fix SourceChangeWarning)
@@ -573,10 +597,29 @@ class DetThread(QThread):  # 检测功能主线程  继承 QThread
         # except Exception as e:
         #     self.send_msg.emit('%s' % e)
 
+    def cleanup(self):
+        if self.vid_cap and self.vid_cap.isOpened():
+            self.vid_cap.release()
+        if hasattr(self, 'out'):
+            self.out.release()
+
+    def check_stop_conditions(self):
+        return not self.is_continue or self.jump_out
+
+    def stop_processing(self):
+        self.is_continue = False
+        self.jump_out = True
+        self.cleanup()
+        self.send_msg.emit('Stopped')
+
 # ↓ Class Main Window 主窗口
 class MainWindow(QMainWindow, Ui_mainWindow):
     def __init__(self, parent=None):
-        super(MainWindow, self).__init__(parent)
+        super().__init__(parent)
+        self.modbus_flag = False
+        self.okCounter = 0
+        self.ngCounter = 0
+        self.output_box_list = [0, 0]
         # self.LoadStreams_thread = None
         self.setupUi(self)
         self.mouse_flag = False
@@ -598,9 +641,10 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         self.qtimer.setSingleShot(True)
         self.qtimer.timeout.connect(lambda: self.statistic_label.clear())
 
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_sensor_data)  # sensor data update
-        self.timer.start(1000)
+        # 250507 关闭传感器功能
+        # self.timer = QTimer(self)
+        # self.timer.timeout.connect(self.update_sensor_data)  # sensor data update
+        # self.timer.start(1000)
 
         # search models automatically
         self.comboBox_model.clear()  ### clear model
@@ -791,17 +835,18 @@ class MainWindow(QMainWindow, Ui_mainWindow):
         crc_code = str_data + ' ' + format(crc & 0xFF, '02X') + ' ' + format((crc >> 8) & 0xFF, '02X')
         return crc_code  # return str  crc_data: 01 06 00 0A 00 6F E9 E4
 
-    def thread_mudbus_run(
+    def thread_modbus_run(
             self):  ###  PC → PLC  通讯线程 ↓  CRC校验计算 [站号(DEC) , 功能码(DEC), 软元件地址（DEC) , 读写位数/数据(DEC)] 示例raw_data = [1, 6, 10, 111]
         global modbus_flag, okCounter, ngCounter, output_box_list
         modbus_flag = True
+        print("thread modbus is running")
 
         self.port_type = self.comboBox_port.currentText()
         print(type(self.port_type), self.port_type)
 
         if self.ret:  ### openport sucessfully
             self.runButton_modbus.setChecked(True)
-            print('thread_mudbus_run modbus_flag = True')
+            print('thread_modbus_run modbus_flag = True')
 
             while self.runButton_modbus.isChecked() and modbus_flag:
                 start = time.time()
@@ -867,33 +912,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
                 except Exception as e:
                     print('client.close error ', e)
 
-    # def modbus_on_off(self):  # modbus rtu 控制开关 open port ↓
-    #     global modbus_flag
-    #     # if not modbus_flag:
-    #     if self.runButton_modbus.isChecked():
-    #         print('runButton_modbus.isChecked')
-    #         modbus_flag = True
-    #         print('set  modbus_flag = True')
-    #         try:
-    #             self.ser, self.ret, error = modbus_rtu.openport(self.port_type, 9600, 5)  # 打开端口
-    #         except Exception as e:
-    #             print('openport erro -1', e)
-    #             self.statistic_msg(str(e))
-    #
-    #         if not self.ret:
-    #             self.runButton_modbus.setChecked(False)
-    #             MessageBox(
-    #                 self.closeButton, title='Error', text='Connection Error: ' + str(error), time=2000,
-    #                 auto=True).exec_()
-    #             print('port did not open')
-    #         else:  # self.ret is  True
-    #             self.runButton_modbus.setChecked(True)
-    #             _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
-    #     else:  # shut down modbus
-    #         print('runButton_modbus.is unChecked')
-    #         modbus_flag = False
-    #         self.runButton_modbus.setChecked(False)
-    #         print('shut down modbus_flag = False')  ####  ###
+
 
     def modbustcp_on_off(self):  # modbus_tcp 控制开关 open port ↓
         global modbus_flag , modbus_tcp_ip, modbus_tcp_port
@@ -914,7 +933,7 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             else:  # self.ret is  True
                 print('modbus_tcp connected successful')
                 self.runButton_modbus.setChecked(True)
-                _thread.start_new_thread(mainWin.thread_mudbus_run, ())  # 启动检测 信号 循环
+                _thread.start_new_thread(mainWin.thread_modbus_run, ())  # 启动检测 信号 循环
         else:  # shut down modbus
             print('runButton_modbus.is unChecked')
             modbus_flag = False
@@ -1122,6 +1141,8 @@ class MainWindow(QMainWindow, Ui_mainWindow):
     @staticmethod
     def show_image(img_src, label):  ### input img_src  output to pyqt label
         try:
+            if len(img_src.shape) != 3:
+                img_src = cv2.cvtColor(img_src, cv2.COLOR_GRAY2BGR)
             ih, iw, _ = img_src.shape
             w = label.geometry().width()
             h = label.geometry().height()
@@ -1144,64 +1165,98 @@ class MainWindow(QMainWindow, Ui_mainWindow):
             label.setPixmap(QPixmap.fromImage(img))
 
         except Exception as e:
-            print(repr(e))
+            print(f"图像显示错误: {repr(e)}")
 
     def show_statistic(self, statistic_dic):  ### predicttion  output  resultWidget
         global results, okCounter, ngCounter, output_box_list
-        # print("statistic", statistic_dic)
         try:
             self.dateTimeEdit.setDateTime(QDateTime.currentDateTime())  # emit dateTime to UI
             self.resultWidget.clear()
-            # print('statistic_dic:', statistic_dic) # NG项目位置固定
             dic2list = sorted(statistic_dic.items(), key=lambda x: x[1], reverse=True)
 
             dic2list = [i for i in dic2list if i[1] > 0]  # append to List  while the value greater than 0
             results = [' ' + str(i[0]) + '：' + str(i[1]) for i in dic2list]  # reform the list
-            # print('statistic result_list:',  results)  #
             self.resultWidget.addItems(results)
             self.label_okCounter.setText(str(loopCounter))
 
             for index, (key, value) in enumerate(statistic_dic.items()):
-                # print(f"Position: {index}, Key: {key}, Value: {value}")
-                global area_min, scratch_min, quantity_dic, scratch_qua
-                # print('scratch', quantity_dic['scratch'])
-                if index == 0:
-                    self.checkBox_2.setChecked(True) if value > int(area_min) else self.checkBox_2.setChecked(False)
-                    # if value > int(area_min):
-                        # self.det_thread.save_folder = r'.\auto_save\jpg\trace' # note on 250429
-                        # self.det_thread.save_pic = r'.\auto_save\jpg\trace'
-                    # else:
-                        # self.det_thread.save_folder = None # note on 250429
-                        # self.det_thread.save_pic = None
+                global area_min, scratch_min, scratch_qua
+                if index == 0: # block
                     self.checkBox_2.setText(key)
-                if index == 1:
-                    self.checkBox_3.setChecked(True) if int(quantity_dic['scratch']) > int(scratch_qua) else self.checkBox_3.setChecked(False)
-                    # if int(quantity_dic['scratch']) > int(scratch_qua):
-                        # self.det_thread.save_folder = r'.\auto_save\jpg\trace' # note on 250429
-                        # self.det_thread.save_pic = r'.\auto_save\jpg\trace'
-                    # else:
-                        # self.det_thread.save_folder = None # note on 250429
-                        # self.det_thread.save_pic = None
+                    self.checkBox_2.setChecked(True) if value >= int(area_min) else self.checkBox_2.setChecked(False)
+                    if value >= int(area_min): ngCounter += 1
+                    # Save image if block area matches threshold
+                    if self.CheckBox_autoSave.isChecked():
+                        if value >= int(area_min):
+                            os.makedirs(r'.\auto_save\jpg\trace', exist_ok=True)
+                            save_path = os.path.join(r'.\auto_save\jpg\trace',
+                                                    f'{key}_' + time.strftime(
+                                                        '%Y_%m_%d_%H_%M_%S',
+                                                        time.localtime()) + f'_Cam{index}_' + f'{value}_' + '.jpg')
+                            add_box = self.plot_box_CheckBox.isChecked()
+                            # 使用当前帧的图像
+                            if self.det_thread.im0 is not None and self.det_thread.imc is not None:
+                                im = self.det_thread.imc if not add_box else self.det_thread.im0
+                                cv2.imwrite(save_path, im)
+                                print(f'save image area, CAM = {index}, save_path={save_path}')
+
+                if index == 1: # scratch
                     self.checkBox_3.setText(key)
+                    try:
+                        scratch_count = self.det_thread.quantity_dic.get('scratch', 0)
+                        scratch_area = self.det_thread.area_dic.get('scratch', 0)
+                        scratch_conf = self.det_thread.confidence_dic.get('scratch', 0)
+                        print('quantity_dic at mainwin:', self.det_thread.quantity_dic)
+                        print('area_dic at mainwin:', self.det_thread.area_dic)
+                        print('confidence_dic at mainwin:', self.det_thread.confidence_dic)
+                        self.checkBox_3.setChecked(True) if int(scratch_count) >= int(scratch_qua) else self.checkBox_3.setChecked(False)
+                        print('detect value', scratch_count, 'threshold', scratch_qua)
+                        if int(scratch_count) >= int(scratch_qua):ngCounter +=1
+                        
+                        # Save image if scratch count exceeds threshold
+                        if self.CheckBox_autoSave.isChecked():
+                            if int(scratch_count) >= int(scratch_qua):
+                                os.makedirs(r'.\auto_save\jpg\trace', exist_ok=True)
+                                save_path = os.path.join(r'.\auto_save\jpg\trace',
+                                                        f'{key}_' + time.strftime(
+                                                            '%Y_%m_%d_%H_%M_%S',
+                                                            time.localtime()) + f'_Cam{index}_' + f'{scratch_count}_' + '.jpg')
+                                add_box = self.plot_box_CheckBox.isChecked()
+
+                                # 使用当前帧的图像
+                                if self.det_thread.im0 is not None and self.det_thread.imc is not None:
+                                    im = self.det_thread.imc if not add_box else self.det_thread.im0
+                                    cv2.imwrite(save_path, im)
+                                    print(f'save image scratch, CAM = {index}, save_path={save_path}')
+                    except Exception as e:
+                        print(f"Error accessing dictionaries: {e}")
+                        self.checkBox_3.setChecked(False)
+
                 if index == 2:
-                    self.checkBox_4.setChecked(True) if value > int(area_min) else self.checkBox_4.setChecked(False)
                     self.checkBox_4.setText(key)
+                    self.checkBox_4.setChecked(True) if value > int(area_min) else self.checkBox_4.setChecked(False)
+                    if value > int(area_min):ngCounter +=1
                 if index == 3:
-                    self.checkBox_5.setChecked(True) if value > int(area_min) else self.checkBox_5.setChecked(False)
                     self.checkBox_5.setText(key)
+                    self.checkBox_5.setChecked(True) if value > int(area_min) else self.checkBox_5.setChecked(False)
+                    if value > int(area_min):ngCounter +=1
                 if index == 4:
-                    self.checkBox_6.setChecked(True) if value > int(area_min) else self.checkBox_6.setChecked(False)
                     self.checkBox_6.setText(key)
+                    self.checkBox_6.setChecked(True) if value > int(area_min) else self.checkBox_6.setChecked(False)
+                    if value > int(area_min):ngCounter +=1
                 if index == 5:
-                    self.checkBox_7.setChecked(True) if value > int(area_min) else self.checkBox_7.setChecked(False)
                     self.checkBox_7.setText(key)
+                    self.checkBox_7.setChecked(True) if value > int(area_min) else self.checkBox_7.setChecked(False)
+
                 if index == 6:
-                    self.checkBox_8.setChecked(True) if value > int(area_min) else self.checkBox_8.setChecked(False)
                     self.checkBox_8.setText(key)
+                    self.checkBox_8.setChecked(True) if value > int(area_min) else self.checkBox_8.setChecked(False)
+
                 if index == 7:
-                    self.checkBox_9.setChecked(True) if value > int(area_min) else self.checkBox_9.setChecked(False)
                     self.checkBox_9.setText(key)
-                ###  更新全局变量 output_box_list →  def thread_mudbus_run() → write plc coils
+                    self.checkBox_9.setChecked(True) if value > int(area_min) else self.checkBox_9.setChecked(False)
+
+                ###  更新全局变量 output_box_list →  def thread_modbus_run() → write plc coils
                 output_box_list = [self.checkBox_2.isChecked(), self.checkBox_3.isChecked(),
                                    self.checkBox_4.isChecked(), self.checkBox_5.isChecked(),
                                    self.checkBox_6.isChecked()]
@@ -1592,4 +1647,17 @@ if __name__ == "__main__":
 
     mainWin.runButton_modbus.setChecked(True)
     mainWin.modbustcp_on_off()  # start modbus tcp
-    sys.exit(app.exec_())
+    mainWin.runButton.setChecked(True)
+    mainWin.runButton.setText('PAUSE')
+    mainWin.det_thread.is_continue = True
+    if not mainWin.det_thread.isRunning():
+        mainWin.run_or_continue()
+
+    try:
+        sys.exit(app.exec_())
+    except cv2.error as e:
+        mainWin.send_msg.emit(f'OpenCV Error: {str(e)}')
+    except Exception as e:
+        mainWin.send_msg.emit(f'Unexpected Error: {str(e)}')
+    finally:
+        mainWin.cleanup()

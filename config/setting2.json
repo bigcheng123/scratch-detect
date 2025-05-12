@@ -1,6 +1,6 @@
 {
   "sensor_switch": 2,
-  "sensor_port": 9,
+  "sensor_port": 4,
   "SQL_switch": 0,
   "server": "172.18.136.183",
   "database": "PE_DataBase",
